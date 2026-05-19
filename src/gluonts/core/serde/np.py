@@ -25,11 +25,7 @@ def encode_np_dtype(v: np.dtype) -> Any:
     Specializes :func:`encode` for invocations where ``v`` is an instance of
     the :class:`~numpy.dtype` class.
     """
-    return {
-        "__kind__": Kind.Instance,
-        "class": "numpy.dtype",
-        "args": encode([v.descr[0][1]]),
-    }
+    pass
 
 
 @encode.register(np.ndarray)
@@ -38,27 +34,10 @@ def encode_np_ndarray(v: np.ndarray) -> Any:
     Specializes :func:`encode` for invocations where ``v`` is an instance of
     the :class:`~numpy.ndarray` class.
     """
-    return {
-        "__kind__": Kind.Instance,
-        "class": "numpy.array",  # use "array" ctor instead of "nparray" class
-        "args": encode([v.tolist(), v.dtype]),
-    }
+    pass
 
 
-@encode.register
-def encode_np_datetime64(v: np.datetime64) -> Any:
-    return {
-        "__kind__": Kind.Instance,
-        "class": "numpy.datetime64",
-        "args": encode([v.astype(int), np.datetime_data(v)]),
-    }
 
 
-@encode.register(np.inexact)
-def encode_np_inexact(v: np.inexact):
-    return float(v)
 
 
-@encode.register(np.integer)
-def encode_np_integer(v: np.integer):
-    return int(v)

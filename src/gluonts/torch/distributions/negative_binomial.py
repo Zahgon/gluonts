@@ -58,12 +58,6 @@ class NegativeBinomial(TorchNegativeBinomial):
         result = self.scipy_nbinom.ppf(value.detach().cpu().numpy())
         return torch.tensor(result, device=value.device, dtype=value.dtype)
 
-    @lazy_property
-    def scipy_nbinom(self):
-        return nbinom(
-            n=self.total_count.detach().cpu().numpy(),
-            p=1.0 - self.probs.detach().cpu().numpy(),
-        )
 
 
 class NegativeBinomialOutput(DistributionOutput):
@@ -95,6 +89,3 @@ class NegativeBinomialOutput(DistributionOutput):
 
         return NegativeBinomial(total_count=total_count, logits=logits)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

@@ -21,15 +21,6 @@ import numpy as np
 class ArrowDecoder:
     reshape_columns: List[Tuple[str, str]]
 
-    @classmethod
-    def from_schema(cls, schema):
-        return cls(
-            [
-                (column.name[: -len("._np_shape")], column.name)
-                for column in schema
-                if column.name.endswith("._np_shape")
-            ]
-        )
 
     def decode(self, batch, row_number: int):
         return next(self.decode_batch(batch.slice(row_number, row_number + 1)))

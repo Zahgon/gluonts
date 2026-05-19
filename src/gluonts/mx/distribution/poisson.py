@@ -46,17 +46,8 @@ class Poisson(Distribution):
     def F(self):
         return getF(self.rate)
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.rate.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     def log_prob(self, x: Tensor) -> Tensor:
         F = self.F
@@ -67,21 +58,13 @@ class Poisson(Distribution):
     def mean(self) -> Tensor:
         return self.rate
 
-    @property
-    def stddev(self) -> Tensor:
-        return self.F.sqrt(self.rate)
 
     def sample(
         self, num_samples: Optional[int] = None, dtype=np.float32
     ) -> Tensor:
-        def s(rate: Tensor) -> Tensor:
-            return self.F.random.poisson(lam=rate, dtype=dtype)
 
         return _sample_multiple(s, rate=self.rate, num_samples=num_samples)
 
-    @property
-    def args(self) -> List:
-        return [self.rate]
 
 
 class PoissonOutput(DistributionOutput):
@@ -110,9 +93,6 @@ class PoissonOutput(DistributionOutput):
             rate = F.broadcast_mul(rate, scale)
             return Poisson(rate, F)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
 
 def ZeroInflatedPoissonOutput() -> MixtureDistributionOutput:

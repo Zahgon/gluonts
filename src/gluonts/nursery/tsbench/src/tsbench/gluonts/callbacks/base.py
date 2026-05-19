@@ -52,20 +52,6 @@ class CallbackList(Callback):
     def __init__(self, callbacks: List[Callback]):
         self.callbacks = callbacks
 
-    def on_train_start(self, trainer: gluon.Trainer) -> None:
-        for callback in self.callbacks:
-            callback.on_train_start(trainer)
 
-    def on_network_initialization_end(self, network: nn.HybridBlock) -> None:
-        for callback in self.callbacks:
-            callback.on_network_initialization_end(network)
 
-    def on_train_batch_end(
-        self, network: nn.HybridBlock, time_elapsed: float
-    ) -> None:
-        for callback in self.callbacks:
-            callback.on_train_batch_end(network, time_elapsed)
 
-    def on_validation_epoch_end(self, loss: float) -> None:
-        for callback in self.callbacks:
-            callback.on_validation_epoch_end(loss)

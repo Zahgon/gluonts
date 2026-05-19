@@ -42,12 +42,6 @@ class Environment(Settings):
 
     data_path: Path = data_path
 
-    def get_data_path(self, create: bool = True) -> Path:
-        path = self.data_path
-        if not path.exists():
-            path.mkdir(parents=True, exist_ok=True)
-
-        return path
 
 
 env = Environment()

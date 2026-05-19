@@ -48,17 +48,8 @@ class Beta(Distribution):
     def F(self):
         return getF(self.alpha)
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.alpha.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     def log_prob(self, x: Tensor) -> Tensor:
         F = self.F
@@ -76,31 +67,13 @@ class Beta(Distribution):
     def mean(self) -> Tensor:
         return self.alpha / (self.alpha + self.beta)
 
-    @property
-    def variance(self) -> Tensor:
-        F = self.F
-        alpha, beta = self.alpha, self.beta
 
-        return (alpha * beta) / (F.square(alpha + beta) * (alpha + beta + 1))
-
-    @property
-    def stddev(self) -> Tensor:
-        return self.F.sqrt(self.variance)
 
     def sample(
         self, num_samples: Optional[int] = None, dtype=np.float32
     ) -> Tensor:
         epsilon = np.finfo(dtype).eps  # machine epsilon
 
-        def s(alpha: Tensor, beta: Tensor) -> Tensor:
-            F = getF(alpha)
-            samples_X = F.sample_gamma(
-                alpha=alpha, beta=F.ones_like(alpha), dtype=dtype
-            )
-            samples_Y = F.sample_gamma(
-                alpha=beta, beta=F.ones_like(beta), dtype=dtype
-            )
-            return samples_X / (samples_X + samples_Y)
 
         samples = _sample_multiple(
             s, alpha=self.alpha, beta=self.beta, num_samples=num_samples
@@ -108,9 +81,6 @@ class Beta(Distribution):
 
         return self.F.clip(data=samples, a_min=epsilon, a_max=1 - epsilon)
 
-    @property
-    def args(self) -> List:
-        return [self.alpha, self.beta]
 
 
 class BetaOutput(DistributionOutput):
@@ -141,10 +111,4 @@ class BetaOutput(DistributionOutput):
         beta = F.maximum(softplus(F, beta), cls.eps())
         return alpha.squeeze(axis=-1), beta.squeeze(axis=-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def value_in_support(self) -> float:
-        return 0.5

@@ -43,5 +43,3 @@ class RNNModel(HybridBlock):
                 num_output, in_units=num_hidden, flatten=False
             )
 
-    def hybrid_forward(self, F, inputs):
-        return self.decoder(self.rnn(inputs))

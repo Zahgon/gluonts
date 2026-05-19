@@ -77,7 +77,7 @@ class ModelConfig:
         Returns:
             The predictor which was loaded.
         """
-        return Predictor.deserialize(path)
+        pass
 
     @property
     def prediction_samples(self) -> int:
@@ -85,14 +85,14 @@ class ModelConfig:
         The number of samples which should be produced when sampling during
         inference.
         """
-        return 100
+        pass
 
     @property
     def prefers_parallel_predictions(self) -> bool:
         """
         Returns whether predictions should be generated in parallel.
         """
-        return False
+        pass
 
     def max_time_series_length(self, _config: DatasetConfig) -> Optional[int]:
         """

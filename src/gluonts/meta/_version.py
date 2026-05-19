@@ -216,40 +216,6 @@ def get_version(fallback):
     )
 
 
-def cmdclass():
-    import setuptools.command.build_py
-    import setuptools.command.sdist
-
-    def write_version(target):
-        target /= file_name
-        if target.exists():
-            target.unlink()
-
-        with open(target, "w") as version_file:
-            version_file.write(
-                f'# created by setup.py\n__version__ = "{__version__}"'
-            )
-
-    class build_py(setuptools.command.build_py.build_py):
-        def run(self):
-            super().run()
-
-            write_version(
-                Path(self.build_lib)
-                / package_root.name
-                / Path(__file__).parent.resolve().relative_to(package_root)
-            )
-
-    class sdist(setuptools.command.sdist.sdist):
-        def make_release_tree(self, base_dir, files):
-            super().make_release_tree(base_dir, files)
-
-            write_version(
-                Path(base_dir)
-                / Path(__file__).parent.resolve().relative_to(dist_root())
-            )
-
-    return {"sdist": sdist, "build_py": build_py}
 
 
 __version__ = get_version(fallback=FALLBACK_VERSION)

@@ -65,12 +65,6 @@ class CheatMetaData:
         with open(file, "w") as fp:
             json.dump(asdict(self), fp)
 
-    def get_hash(self):
-        return (
-            hashlib.md5(json.dumps(asdict(self)).encode("utf-8"))
-            .digest()
-            .hex()
-        )
 
 
 @register_data_module
@@ -169,33 +163,12 @@ class CheatArtificialDataModule(pl.LightningDataModule):
         self.splits: DatasetSplits
         self.random_state = np.random.RandomState(random_seed)
 
-    @property
-    def dataset_names_val_test(self) -> List[str]:
-        return list({"cc1.0", f"cc{self.meta.cheat_chance}"})
 
-    @property
-    def dataset_names_val(self) -> List[str]:
-        return self.dataset_names_val_test
 
-    @property
-    def dataset_names_test(self) -> List[str]:
-        return self.dataset_names_val_test
 
-    @property
-    def context_length(self) -> int:
-        return self.meta.context_length_multiple * self.meta.prediction_length
 
-    @property
-    def support_length(self) -> int:
-        return self.meta.support_length_multiple * self.meta.prediction_length
 
-    @property
-    def prediction_length(self) -> int:
-        return self.meta.prediction_length
 
-    @property
-    def dataset_name(self) -> str:
-        return "cheat_" + self.meta.get_hash()
 
     @property
     def root(self) -> Path:
@@ -562,23 +535,8 @@ class CheatCounterfactualArtificialDataModule(CheatArtificialDataModule):
         self.splits: DatasetSplits
         self.random_state = np.random.RandomState(random_seed)
 
-    @property
-    def dataset_names_val_test(self) -> List[str]:
-        return list({"cc1.0", f"cf{self.meta.counterfactual_size}"})
 
-    @property
-    def dataset_names_train(self) -> List[str]:
-        if self.meta.counterfactual_size == 0:
-            return ["cc1.0"]
-        else:
-            if self.meta.counterfactual_mixing:
-                return ["cc1.0", f"cf{self.meta.counterfactual_size}"]
-            else:
-                return [f"cf{self.meta.counterfactual_size}"]
 
-    @property
-    def dataset_name(self) -> str:
-        return "cf_" + self.meta.get_hash()
 
     def train_dataloader(self) -> DataLoader[TripletBatch]:
         splits = [

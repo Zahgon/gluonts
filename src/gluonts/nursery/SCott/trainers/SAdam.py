@@ -62,21 +62,6 @@ class SAdam:
         self.tensorboard_path = tensorboard_path
         self.gamma = gamma
 
-    def inference(self, model, inputs, weighted_batch=False, group_ratio=None):
-        output = model(*inputs)
-        if weighted_batch:
-            y = torch.ones(output.shape).to(output.get_device())
-            for i in range(self.batch_size):
-                for j in range(len(group_ratio)):
-                    y[i * len(group_ratio) + j] *= group_ratio[j]
-            output = (output * y).mean() * self.num_strata
-        else:
-            output = output.mean()
-        if isinstance(output, (list, tuple)):
-            loss = output[0]
-        else:
-            loss = output
-        return loss
 
     def __call__(
         self, net: nn.Module, input_names: List[str], data_loaders

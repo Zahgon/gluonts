@@ -79,25 +79,10 @@ class Locations(NamedTuple):
     output_path: str
     code_location: str
 
-    @property
-    def job_output_path(self):
-        return f"{self.output_path}/{self.job_name}/output"
 
-    @property
-    def job_code_location(self):
-        return f"{self.code_location}/{self.job_name}/source"
 
-    @property
-    def estimator_path(self):
-        return f"{self.job_code_location}/estimator.json"
 
-    @property
-    def output_archive(self):
-        return f"{self.job_output_path}/output.tar.gz"
 
-    @property
-    def model_archive(self):
-        return f"{self.job_output_path}/model.tar.gz"
 
 
 class GluonTSFramework(Framework):
@@ -411,17 +396,7 @@ class GluonTSFramework(Framework):
         Dict:
             The transformed init_params
         """
-
-        init_params = super()._prepare_init_params_from_job_description(
-            job_details, model_channel_name
-        )
-
-        # TODO: handle conversion from image name to params, once default
-        # images are provided
-        # Example implementation:
-        #   https://github.com/aws/sagemaker-python-sdk/blob/master/src/sagemaker/mxnet/estimator.py
-
-        return init_params
+        pass
 
     def _initialize_job(
         self, monitored_metrics, dataset, num_samples, quantiles, job_name

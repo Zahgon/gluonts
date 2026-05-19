@@ -42,7 +42,7 @@ class QuantileForecasts:
         """
         Returns the prediction length of the quantile forecasts.
         """
-        return self.values.shape[-1]
+        pass
 
     @property
     def seasonality(self) -> int:
@@ -50,7 +50,7 @@ class QuantileForecasts:
         Returns the seasonality of the forecasts (i.e. how many steps to go
         back to arrive at the value of the previous period).
         """
-        return get_seasonality(self.freq.freqstr)  # type: ignore
+        pass
 
     # ---------------------------------------------------------------------------------------------
     # DATA ACCESS

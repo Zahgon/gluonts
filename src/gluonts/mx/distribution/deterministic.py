@@ -43,17 +43,8 @@ class Deterministic(Distribution):
     def F(self):
         return getF(self.value)
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.value.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     def log_prob(self, x: Tensor) -> Tensor:
         F = self.F
@@ -68,9 +59,6 @@ class Deterministic(Distribution):
     def mean(self) -> Tensor:
         return self.value
 
-    @property
-    def stddev(self) -> Tensor:
-        return self.value.zeros_like()
 
     def cdf(self, x):
         F = self.F
@@ -113,9 +101,6 @@ class Deterministic(Distribution):
 
         return quantiles
 
-    @property
-    def args(self) -> List:
-        return [self.value]
 
 
 class DeterministicArgProj(mx.gluon.HybridBlock):
@@ -131,8 +116,6 @@ class DeterministicArgProj(mx.gluon.HybridBlock):
         self.args_dim = args_dim
         self.dtype = dtype
 
-    def hybrid_forward(self, F, x: Tensor) -> Tuple[Tensor]:
-        return (self.value * F.ones_like(x.sum(axis=-1)),)
 
 
 class DeterministicOutput(DistributionOutput):
@@ -151,6 +134,3 @@ class DeterministicOutput(DistributionOutput):
             value=self.value, args_dim=self.args_dim, dtype=self.dtype
         )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

@@ -47,17 +47,8 @@ class Laplace(Distribution):
     def F(self):
         return getF(self.mu)
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.mu.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     def log_prob(self, x: Tensor) -> Tensor:
         F = self.F
@@ -67,9 +58,6 @@ class Laplace(Distribution):
     def mean(self) -> Tensor:
         return self.mu
 
-    @property
-    def stddev(self) -> Tensor:
-        return 2.0**0.5 * self.b
 
     def cdf(self, x: Tensor) -> Tensor:
         y = (x - self.mu) / self.b
@@ -78,14 +66,6 @@ class Laplace(Distribution):
     def sample_rep(self, num_samples=None, dtype=np.float32) -> Tensor:
         F = self.F
 
-        def s(mu: Tensor, b: Tensor) -> Tensor:
-            ones = mu.ones_like()
-            x = F.random.uniform(-0.5 * ones, 0.5 * ones, dtype=dtype)
-            laplace_samples = mu - b * F.sign(x) * F.log(
-                (1.0 - 2.0 * F.abs(x)).clip(1.0e-30, 1.0e30)
-                # 1.0 - 2.0 * F.abs(x)
-            )
-            return laplace_samples
 
         return _sample_multiple(
             s, mu=self.mu, b=self.b, num_samples=num_samples
@@ -101,9 +81,6 @@ class Laplace(Distribution):
 
         return F.broadcast_add(self.mu, F.broadcast_mul(self.b, u))
 
-    @property
-    def args(self) -> List:
-        return [self.mu, self.b]
 
 
 class LaplaceOutput(DistributionOutput):
@@ -115,9 +92,6 @@ class LaplaceOutput(DistributionOutput):
         b = F.maximum(softplus(F, b), cls.eps())
         return mu.squeeze(axis=-1), b.squeeze(axis=-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
 
 class LaplaceFixedVarianceOutput(LaplaceOutput):

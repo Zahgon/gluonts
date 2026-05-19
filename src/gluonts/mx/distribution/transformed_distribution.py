@@ -50,82 +50,15 @@ class TransformedDistribution(Distribution):
     def F(self):
         return self.base_distribution.F
 
-    @property
-    def support_min_max(self) -> Tuple[Tensor, Tensor]:
-        F = self.F
-        lb, ub = self.base_distribution.support_min_max
-        for t in self.transforms:
-            _lb = t.f(lb)
-            _ub = t.f(ub)
-            lb = F.minimum(_lb, _ub)
-            ub = F.maximum(_lb, _ub)
-        return lb, ub
 
-    def _slice_bijection(
-        self, trans: bij.Bijection, item: Any
-    ) -> bij.Bijection:
-        from .box_cox_transform import BoxCoxTransform
-
-        if isinstance(trans, bij.AffineTransformation):
-            loc = (
-                _index_tensor(trans.loc, item)
-                if trans.loc is not None
-                else None
-            )
-            scale = (
-                _index_tensor(trans.scale, item)
-                if trans.scale is not None
-                else None
-            )
-            return bij.AffineTransformation(loc=loc, scale=scale)
-        elif isinstance(trans, BoxCoxTransform):
-            return BoxCoxTransform(
-                _index_tensor(trans.lambda_1, item),
-                _index_tensor(trans.lambda_2, item),
-            )
-        elif isinstance(trans, bij.InverseBijection):
-            return bij.InverseBijection(
-                self._slice_bijection(trans._bijection, item)
-            )
-        else:
-            return trans
 
     def __getitem__(self, item):
         bd_slice = self.base_distribution[item]
         trans_slice = [self._slice_bijection(t, item) for t in self.transforms]
         return TransformedDistribution(bd_slice, trans_slice)
 
-    @property
-    def event_dim(self):
-        if self._event_dim is None:
-            self._event_dim = max(
-                [self.base_distribution.event_dim]
-                + [t.event_dim for t in self.transforms]
-            )
-        assert isinstance(self._event_dim, int)
-        return self._event_dim
 
-    @property
-    def batch_shape(self) -> Tuple:
-        if self._batch_shape is None:
-            shape = (
-                self.base_distribution.batch_shape
-                + self.base_distribution.event_shape
-            )
-            self._batch_shape = shape[: len(shape) - self.event_dim]
-        assert isinstance(self._batch_shape, tuple)
-        return self._batch_shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        if self._event_shape is None:
-            shape = (
-                self.base_distribution.batch_shape
-                + self.base_distribution.event_shape
-            )
-            self._event_shape = shape[len(shape) - self.event_dim :]
-        assert isinstance(self._event_shape, tuple)
-        return self._event_shape
 
     def sample(
         self, num_samples: Optional[int] = None, dtype=np.float32
@@ -211,14 +144,7 @@ class AffineTransformedDistribution(TransformedDistribution):
     def mean(self) -> Tensor:
         return self.base_distribution.mean * self.scale + self.loc
 
-    @property
-    def stddev(self) -> Tensor:
-        return self.base_distribution.stddev * self.scale
 
-    @property
-    def variance(self) -> Tensor:
-        # TODO: cover the multivariate case here too
-        return self.base_distribution.variance * self.scale**2
 
     # TODO: crps
 

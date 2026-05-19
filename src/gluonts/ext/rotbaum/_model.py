@@ -403,14 +403,7 @@ class QRX:
         list
             list of lists
         """
-        predicted_samples = []
-        for pt in x_test:
-            pred = self.model.predict(np.array([pt]))[0]
-            closest_pred = self.get_closest_pt(self.sorted_train_preds, pred)
-            predicted_samples.append(
-                self.id_to_bins[self.preds_to_id[closest_pred]]
-            )
-        return predicted_samples
+        pass
 
 
 LSF = QRX  # LSF stands for "Level Set Forecaster". This name emphasizes that

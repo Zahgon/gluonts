@@ -94,11 +94,7 @@ class CausalConv1D(gluon.HybridBlock):
             causal conv1d output. Shape (batch_size, num_features,
             sequence_length)
         """
-        ct = self.conv1d(data)
-        if self.kernel_size > 0:
-            end_ = -self.padding if self.padding != 0 else None
-            ct = F.slice_axis(ct, axis=2, begin=0, end=end_)
-        return ct
+        pass
 
 
 class DilatedCausalGated(gluon.HybridBlock):
@@ -161,9 +157,7 @@ class DilatedCausalGated(gluon.HybridBlock):
         Tensor
             output, shape (batch_size, num_features, sequence_length)
         """
-        x1 = self.conv1(x)
-        x2 = self.conv2(x)
-        return self.output_conv(x1 * x2)
+        pass
 
 
 class ResidualSequential(gluon.nn.HybridSequential):
@@ -191,13 +185,4 @@ class ResidualSequential(gluon.nn.HybridSequential):
             output of the ResidualSequential
 
         """
-        outs = []
-        for i, block in enumerate(self._children.values()):
-            out = block(x)
-            outs.append(out)
-            if i == 0:
-                x = out
-            else:
-                x = x + out
-
-        return sum(outs)
+        pass

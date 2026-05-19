@@ -181,18 +181,6 @@ def evaluate(
         raise ValueError(f"Invalid type for recipe {recipe}")
 
 
-def make_func(
-    length: int, recipe: Recipe, global_state=None
-) -> Callable[[int, Env], DataEntry]:
-    if global_state is None:
-        global_state = {}
-
-    def f(length=length, global_state=global_state, *args, **kwargs):
-        return evaluate(
-            recipe, length=length, global_state=global_state, *args, **kwargs
-        )
-
-    return f
 
 
 def take_as_list(iterator, num):
@@ -296,15 +284,6 @@ class Lifted:
         pass
 
 
-def expand_shape(s, length):
-    if isinstance(s, int):
-        s = (s,)
-    if s is None or len(s) == 0:
-        return s
-    s = np.array(s)
-    if np.any(s == 0):
-        s[s == 0] = length
-    return tuple(s)
 
 
 class NumpyFunc(Lifted):
@@ -497,31 +476,6 @@ def lift(input: Union[int, Callable]):
         num_outs = 1
 
     def w(f):
-        @functools.wraps(f)
-        def g(*f_args, **f_kwargs):
-            class Tmp(Lifted):
-                num_outputs = num_outs
-
-                @validated()
-                def __init__(self, f, f_args, f_kwargs):
-                    self.f = f
-                    self.f_args = f_args
-                    self.f_kwargs = f_kwargs
-
-                def __call__(self, x: Env, length: int, *args, **kwargs):
-                    resolved_f_args = [
-                        resolve(a, x, length, *args, **kwargs)
-                        for a in self.f_args
-                    ]
-                    resolved_f_kwargs = {
-                        k: resolve(v, x, length, *args, **kwargs)
-                        for k, v in self.f_kwargs.items()
-                    }
-                    return self.f(
-                        *resolved_f_args, **resolved_f_kwargs, length=length
-                    )
-
-            return Tmp(f, f_args, f_kwargs)
 
         return g
 
@@ -1068,20 +1022,7 @@ def normalized_ar1(tau, x0=None, norm="minmax", sigma=1.0):
       - 'minmax' -> min_max_scaled
       - 'standard' -> 0 mean, unit variance
     """
-    assert norm in [None, "minmax", "standard"]
-    phi = lifted_numpy.exp(-1.0 / tau)
-    a = ARp(phi=[phi], xhist=[x0] if x0 is not None else None, sigma=sigma)
-
-    if norm is None:
-        return a
-    elif norm == "minmax":
-        amin = lifted_numpy.min(a)
-        amax = lifted_numpy.max(a)
-        return (a - amin) / (amax - amin)
-    elif norm == "standard":
-        return (a - lifted_numpy.mean(a)) / lifted_numpy.std(a)
-    else:
-        raise NotImplementedError()
+    pass
 
 
 class Choose(Lifted):

@@ -378,32 +378,6 @@ class SampleTargetDim(FlatMapTransformation):
         self.num_samples = num_samples
         self.shuffle = shuffle
 
-    def flatmap_transform(
-        self, data: DataEntry, is_train: bool
-    ) -> Iterator[DataEntry]:
-        if not is_train:
-            yield data
-        else:
-            # (target_dim,)
-            target_dimensions = data[self.field_name]
-
-            if self.shuffle:
-                np.random.shuffle(target_dimensions)
-
-            target_dimensions = target_dimensions[: self.num_samples]
-
-            data[self.field_name] = target_dimensions
-            # (seq_len, target_dim) -> (seq_len, num_samples)
-
-            for field in [
-                f"past_{self.target_field}",
-                f"future_{self.target_field}",
-                f"past_{self.observed_values_field}",
-                f"future_{self.observed_values_field}",
-            ]:
-                data[field] = data[field][:, target_dimensions]
-
-            yield data
 
 
 class CDFtoGaussianTransform(MapTransformation):
@@ -456,20 +430,6 @@ class CDFtoGaussianTransform(MapTransformation):
         self.target_dim = target_dim
         self.dtype = dtype
 
-    def map_transform(self, data: DataEntry, is_train: bool) -> DataEntry:
-        self._preprocess_data(data, is_train=is_train)
-        self._calc_pw_linear_params(data)
-
-        for target_field in [self.past_target_field, self.future_target_field]:
-            data[target_field + self.cdf_suffix] = self.standard_gaussian_ppf(
-                self._empirical_cdf_forward_transform(
-                    data[self.sort_target_field],
-                    data[target_field],
-                    data[self.slopes_field],
-                    data[self.intercepts_field],
-                )
-            )
-        return data
 
     def _preprocess_data(self, data: DataEntry, is_train: bool):
         """
@@ -550,31 +510,7 @@ class CDFtoGaussianTransform(MapTransformation):
         Returns
         -------
         """
-        sorted_target = data[self.sort_target_field]
-        sorted_target_length, target_dim = sorted_target.shape
-
-        quantiles = np.stack(
-            [np.arange(sorted_target_length) for _ in range(target_dim)],
-            axis=1,
-        ) / float(sorted_target_length)
-
-        x_diff = np.diff(sorted_target, axis=0)
-        y_diff = np.diff(quantiles, axis=0)
-
-        # Calculate slopes of the pw-linear pieces.
-        slopes = np.where(
-            x_diff == 0.0, np.zeros_like(x_diff), y_diff / x_diff
-        )
-
-        zeroes = np.zeros_like(np.expand_dims(slopes[0, :], axis=0))
-        slopes = np.append(slopes, zeroes, axis=0)
-
-        # Calculate intercepts of the pw-linear pieces.
-        intercepts = quantiles - slopes * sorted_target
-
-        # Populate new fields with the piece-wise linear parameters.
-        data[self.slopes_field] = slopes.astype(self.dtype)
-        data[self.intercepts_field] = intercepts.astype(self.dtype)
+        pass
 
     def _empirical_cdf_forward_transform(
         self,
@@ -603,15 +539,7 @@ class CDFtoGaussianTransform(MapTransformation):
         quantiles
             Empirical CDF quantiles in [0, 1] interval with winsorized cutoff.
         """
-        m = sorted_values.shape[0]
-        quantiles = self._forward_transform(
-            sorted_values, values, slopes, intercepts
-        )
-
-        quantiles = np.clip(
-            quantiles, self.winsorized_cutoff(m), 1 - self.winsorized_cutoff(m)
-        )
-        return quantiles
+        pass
 
     @staticmethod
     def _add_noise(x: np.ndarray) -> np.ndarray:
@@ -647,16 +575,7 @@ class CDFtoGaussianTransform(MapTransformation):
         indices
             Indices mapping to the active linear function.
         """
-        indices_left = np.searchsorted(sorted_vec, to_insert_vec, side="left")
-        indices_right = np.searchsorted(
-            sorted_vec, to_insert_vec, side="right"
-        )
-
-        indices = indices_left + (indices_right - indices_left) // 2
-        indices = indices - 1
-        indices = np.minimum(indices, len(sorted_vec) - 1)
-        indices[indices < 0] = 0
-        return indices
+        pass
 
     def _forward_transform(
         self,
@@ -685,27 +604,13 @@ class CDFtoGaussianTransform(MapTransformation):
         transformed_target
             Transformed target vector.
         """
-        transformed = list()
-        for sorted_vector, t, slope, intercept in zip(
-            sorted_vec.transpose(),
-            target.transpose(),
-            slopes.transpose(),
-            intercepts.transpose(),
-        ):
-            indices = self._search_sorted(sorted_vector, t)
-            transformed_value = slope[indices] * t + intercept[indices]
-            transformed.append(transformed_value)
-        return np.array(transformed).transpose()
+        pass
 
     @staticmethod
     def standard_gaussian_cdf(x: np.ndarray) -> np.ndarray:
         u = x / (np.sqrt(2.0))
         return (erf(u) + 1.0) / 2.0
 
-    @staticmethod
-    def standard_gaussian_ppf(y: np.ndarray) -> np.ndarray:
-        y_clipped = np.clip(y, a_min=1.0e-6, a_max=1.0 - 1.0e-6)
-        return np.sqrt(2.0) * erfinv(2.0 * y_clipped - 1.0)
 
     @staticmethod
     def winsorized_cutoff(m: float) -> float:
@@ -723,9 +628,7 @@ class CDFtoGaussianTransform(MapTransformation):
         res
             Truncated empirical CDf value.
         """
-        res = 1 / (4 * m**0.25 * np.sqrt(3.14 * np.log(m)))
-        assert 0 < res < 1
-        return res
+        pass
 
     @staticmethod
     def _fill(target: np.ndarray, expected_length: int) -> np.ndarray:
@@ -880,30 +783,7 @@ class ToIntervalSizeFormat(FlatMapTransformation):
         self.drop_empty = drop_empty
         self.discard_first = discard_first
 
-    def _process_sparse_time_sample(self, a: List) -> Tuple[List, List]:
-        a: np.ndarray = np.array(a)
-        (non_zero_index,) = np.nonzero(a)
 
-        if len(non_zero_index) == 0:
-            return [], []
-
-        times = np.diff(non_zero_index, prepend=-1.0).tolist()
-        sizes = a[non_zero_index].tolist()
-
-        if self.discard_first:
-            return times[1:], sizes[1:]
-        return times, sizes
-
-    def flatmap_transform(
-        self, data: DataEntry, is_train: bool
-    ) -> Iterator[DataEntry]:
-        target = data[self.target_field]
-
-        times, sizes = self._process_sparse_time_sample(target)
-
-        if len(times) > 0 or not self.drop_empty:
-            data[self.target_field] = [times, sizes]
-            yield data
 
 
 class QuantizeMeanScaled(SimpleTransformation):

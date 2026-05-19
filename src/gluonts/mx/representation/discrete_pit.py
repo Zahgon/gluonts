@@ -75,26 +75,4 @@ class DiscretePIT(Representation):
         else:
             self.mlp = None
 
-    def hybrid_forward(
-        self,
-        F,
-        data: Tensor,
-        observed_indicator: Tensor,
-        scale: Optional[Tensor],
-        rep_params: List[Tensor],
-        **kwargs,
-    ) -> Tuple[Tensor, Tensor, List[Tensor]]:
-        data = data / self.num_bins
-        if self.mlp_transf:
-            data = F.expand_dims(data, axis=-1)
-            data = self.mlp(data)
-        return data, scale, rep_params
 
-    def post_transform(
-        self, F, samples: Tensor, scale: Tensor, rep_params: List[Tensor]
-    ) -> Tensor:
-        samples = samples * F.full(1, self.num_bins)
-        samples = F.Custom(
-            samples, F.arange(self.num_bins), op_type="digitize"
-        )
-        return samples

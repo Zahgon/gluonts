@@ -34,12 +34,3 @@ class BroadcastTo(MapTransformation):
         self.ext_length = ext_length
         self.target_field = target_field
 
-    def map_transform(self, data: DataEntry, is_train: bool) -> DataEntry:
-        length = target_transformation_length(
-            data[self.target_field], self.ext_length, is_train
-        )
-        data[self.field] = np.broadcast_to(
-            data[self.field],
-            (data[self.field].shape[:-1] + (length,)),
-        )
-        return data

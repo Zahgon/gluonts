@@ -101,4 +101,4 @@ class RNN(HybridBlock):
         Tensor
             rnn output with shape (batch_size, num_timesteps, num_dimensions)
         """
-        return self.rnn(inputs)
+        pass

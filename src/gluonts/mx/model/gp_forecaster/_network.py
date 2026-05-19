@@ -124,37 +124,7 @@ class GaussianProcessNetworkBase(mx.gluon.HybridBlock):
             Model noise sigma.
                 Tensor of shape (batch_size, 1, 1).
         """
-        output = self.embedding(
-            feat_static_cat.squeeze()
-        )  # Shape (batch_size, num_hyperparams + 1)
-        kernel_args = self.proj_kernel_args(output)
-        sigma = softplus(
-            F,
-            output.slice_axis(  # sigma is the last hyper-parameter
-                axis=1,
-                begin=self.num_hyperparams,
-                end=self.num_hyperparams + 1,
-            ),
-        )
-        if self.params_scaling:
-            scalings = self.kernel_output.gp_params_scaling(
-                F, past_target, past_time_feat
-            )
-            sigma = F.broadcast_mul(sigma, scalings[self.num_hyperparams])
-            kernel_args = (
-                F.broadcast_mul(kernel_arg, scaling)
-                for kernel_arg, scaling in zip(
-                    kernel_args, scalings[0 : self.num_hyperparams]
-                )
-            )
-        min_value = 1e-5
-        max_value = 1e8
-        kernel_args = (
-            kernel_arg.clip(min_value, max_value).expand_dims(axis=2)
-            for kernel_arg in kernel_args
-        )
-        sigma = sigma.clip(min_value, max_value).expand_dims(axis=2)
-        return kernel_args, sigma
+        pass
 
 
 class GaussianProcessTrainingNetwork(GaussianProcessNetworkBase):
@@ -195,19 +165,7 @@ class GaussianProcessTrainingNetwork(GaussianProcessNetworkBase):
         Tensor
             GP loss of shape (batch_size, 1)
         """
-        kernel_args, sigma = self.get_gp_params(
-            F, past_target, past_time_feat, feat_static_cat
-        )
-        kernel = self.kernel_output.kernel(kernel_args)
-        gp = GaussianProcess(
-            sigma=sigma,
-            kernel=kernel,
-            context_length=self.context_length,
-            float_type=self.float_type,
-            max_iter_jitter=self.max_iter_jitter,
-            jitter_method=self.jitter_method,
-        )
-        return gp.log_prob(past_time_feat, past_target)
+        pass
 
 
 class GaussianProcessPredictionNetwork(GaussianProcessNetworkBase):
@@ -261,21 +219,4 @@ class GaussianProcessPredictionNetwork(GaussianProcessNetworkBase):
         Tensor
             GP samples of shape (batch_size, num_samples, prediction_length).
         """
-        kernel_args, sigma = self.get_gp_params(
-            F, past_target, past_time_feat, feat_static_cat
-        )
-        gp = GaussianProcess(
-            sigma=sigma,
-            kernel=self.kernel_output.kernel(kernel_args),
-            context_length=self.context_length,
-            prediction_length=self.prediction_length,
-            num_samples=self.num_parallel_samples,
-            float_type=self.float_type,
-            max_iter_jitter=self.max_iter_jitter,
-            jitter_method=self.jitter_method,
-            sample_noise=self.sample_noise,
-        )
-        samples, _, _ = gp.exact_inference(
-            past_time_feat, past_target, future_time_feat
-        )  # Shape (batch_size, prediction_length, num_samples)
-        return samples.swapaxes(1, 2)
+        pass

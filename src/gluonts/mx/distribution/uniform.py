@@ -47,17 +47,8 @@ class Uniform(Distribution):
     def F(self):
         return getF(self.low)
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.low.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     def log_prob(self, x: Tensor) -> Tensor:
         F = self.F
@@ -70,9 +61,6 @@ class Uniform(Distribution):
     def mean(self) -> Tensor:
         return (self.high + self.low) / 2
 
-    @property
-    def stddev(self) -> Tensor:
-        return (self.high - self.low) / (12**0.5)
 
     def sample(
         self, num_samples: Optional[int] = None, dtype=np.float32
@@ -87,11 +75,6 @@ class Uniform(Distribution):
     def sample_rep(
         self, num_samples: Optional[int] = None, dtype=np.float32
     ) -> Tensor:
-        def s(low: Tensor, high: Tensor) -> Tensor:
-            raw_samples = self.F.sample_uniform(
-                low=low.zeros_like(), high=high.ones_like(), dtype=dtype
-            )
-            return low + raw_samples * (high - low)
 
         return _sample_multiple(
             s, low=self.low, high=self.high, num_samples=num_samples
@@ -108,9 +91,6 @@ class Uniform(Distribution):
             F.broadcast_mul(self.high - self.low, level), self.low
         )
 
-    @property
-    def args(self) -> List:
-        return [self.low, self.high]
 
 
 class UniformOutput(DistributionOutput):
@@ -122,6 +102,3 @@ class UniformOutput(DistributionOutput):
         high = low + softplus(F, width)
         return low.squeeze(axis=-1), high.squeeze(axis=-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

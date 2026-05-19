@@ -164,26 +164,8 @@ def equals_list(this: list, that: list) -> bool:
     return True
 
 
-@equals.register(dict)
-def equals_dict(this: dict, that: dict) -> bool:
-    this_keys = this.keys()
-    that_keys = that.keys()
-
-    if not this_keys == that_keys:
-        return False
-
-    for name in this_keys:
-        x = this[name]
-        y = that[name]
-        if not equals(x, y):
-            return False
-
-    return True
 
 
-@equals.register(np.ndarray)
-def equals_ndarray(this: np.ndarray, that: np.ndarray) -> bool:
-    return np.array_equal(this, that)
 
 
 @singledispatch
@@ -191,9 +173,6 @@ def tensor_to_numpy(tensor) -> np.ndarray:
     raise NotImplementedError
 
 
-@tensor_to_numpy.register(np.ndarray)
-def _numpy_to_numpy(tensor: np.ndarray) -> np.ndarray:
-    return tensor
 
 
 @singledispatch
@@ -290,86 +269,5 @@ def validated(base_model=None):
         Default base class for all synthesized Pydantic models.
     """
 
-    def validator(init):
-        init_qualname = dict(inspect.getmembers(init))["__qualname__"]  # noqa
-        init_clsnme = init_qualname.split(".")[0]
-        init_params = inspect.signature(init).parameters
-        init_fields = {
-            param.name: (
-                (
-                    param.annotation
-                    if param.annotation != inspect.Parameter.empty
-                    else Any
-                ),
-                (
-                    param.default
-                    if param.default != inspect.Parameter.empty
-                    else ...
-                ),
-            )
-            for param in init_params.values()
-            if param.name != "self"
-            and param.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
-        }
-
-        if base_model is None:
-            PydanticModel = create_model(
-                f"{init_clsnme}Model",
-                __config__=BaseValidatedInitializerModel.Config,
-                **init_fields,
-            )
-        else:
-            PydanticModel = create_model(
-                f"{init_clsnme}Model",
-                __base__=base_model,
-                **init_fields,
-            )
-
-        def validated_repr(self) -> str:
-            cname = fqname_for(self.__class__)
-            kwargs = ", ".join(
-                f"{key}={value!r}" for key, value in self.__init_args__.items()
-            )
-            return f"{cname}({kwargs})"
-
-        def validated_getnewargs_ex(self):
-            return (), self.__init_args__
-
-        @functools.wraps(init)
-        def init_wrapper(*args, **kwargs):
-            self, *args = args
-
-            nmargs = {
-                name: arg
-                for (name, param), arg in zip(
-                    list(init_params.items()), [self] + args
-                )
-                if name != "self"
-            }
-            model = PydanticModel(**{**nmargs, **kwargs})
-
-            # merge nmargs, kwargs, and the model fields into a single dict
-            all_args = {**nmargs, **kwargs, **model.__dict__}
-
-            # save the merged dictionary for Representable use, but only of the
-            # __init_args__ is not already set in order to avoid overriding a
-            # value set by a subclass initializer in super().__init__ calls
-            if not getattr(self, "__init_args__", {}):
-                self.__init_args__ = OrderedDict(
-                    {
-                        name: arg
-                        for name, arg in sorted(all_args.items())
-                        if not skip_encoding(arg)
-                    }
-                )
-                self.__class__.__getnewargs_ex__ = validated_getnewargs_ex
-                self.__class__.__repr__ = validated_repr
-
-            return init(self, **all_args)
-
-        # attach the Pydantic model as the attribute of the initializer wrapper
-        setattr(init_wrapper, "Model", PydanticModel)
-
-        return init_wrapper
 
     return validator

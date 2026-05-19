@@ -77,21 +77,12 @@ class HierarchicalTimeSeries:
     def freq(self):
         return self._freq
 
-    @property
-    def ts_at_all_levels(self):
-        return self._ts_at_all_levels
 
     @property
     def S(self):
         return self._S
 
-    @property
-    def num_ts(self):
-        return self._S.shape[0]
 
-    @property
-    def num_bottom_ts(self):
-        return self._S.shape[1]
 
     @staticmethod
     def aggregate_ts(
@@ -177,48 +168,4 @@ class HierarchicalTimeSeries:
         PandasDataset
             An instance of `PandasDataset`.
         """
-        future_length = 0
-
-        if feat_dynamic_real is not None:
-            assert (
-                self.ts_at_all_levels.index[0] == feat_dynamic_real.index[0]
-            ), (
-                "The staring time point of dynamic features should match "
-                "with that of the hierarchical time series. "
-                f"Start of `feat_dynamic_real`: "
-                f"{feat_dynamic_real.index[0]} and "
-                f"the start of hierarchical time series: "
-                f"{self.ts_at_all_levels.index[0]}."
-            )
-
-            assert feat_dynamic_real.index.intersection(
-                self.ts_at_all_levels.index
-            ).equals(self.ts_at_all_levels.index), (
-                "Dynamic features should be provided for all time "
-                "points where the target is defined. "
-                f"Index of `feat_dynamic_real`: {feat_dynamic_real.index}, \n"
-                f"Index of `ts_at_all_levels` of `hts`: "
-                f"{self.ts_at_all_levels.index}. \n "
-                "Check if the periods of these indices also match. \n"
-            )
-
-            feat_dynamic_real.columns = [
-                f"feat_dynamic_real_{col}" for col in feat_dynamic_real.columns
-            ]
-            future_length = len(feat_dynamic_real.index) - len(
-                self.ts_at_all_levels.index
-            )
-        else:
-            feat_dynamic_real = pd.DataFrame()
-
-        pandas_ds = PandasDataset(
-            dataframes=pd.concat(
-                [self.ts_at_all_levels, feat_dynamic_real],
-                axis=1,
-            ),
-            target=list(self.ts_at_all_levels.columns),
-            feat_dynamic_real=list(feat_dynamic_real.columns),
-            future_length=future_length,
-        )
-
-        return pandas_ds
+        pass

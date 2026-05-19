@@ -47,18 +47,7 @@ class GenPareto(Distribution):
         )
         return mu
 
-    @property
-    def variance(self):
-        xi, beta = self.xi, self.beta
-        return torch.where(
-            xi < 1 / 2.0,
-            torch.div(beta**2, torch.mul((1 - xi) ** 2, (1 - 2 * xi))),
-            np.nan * torch.ones_like(xi),
-        )
 
-    @property
-    def stddev(self):
-        return torch.sqrt(self.variance)
 
     def __init__(self, xi, beta, validate_args=None):
         self.xi, self.beta = broadcast_all(xi, beta)

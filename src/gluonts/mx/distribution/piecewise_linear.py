@@ -78,9 +78,6 @@ class PiecewiseLinear(Distribution):
     def F(self):
         return getF(self.gamma)
 
-    @property
-    def args(self) -> List:
-        return [self.gamma, self.slopes, self.knot_spacings]
 
     @staticmethod
     def _to_orig_params(
@@ -320,17 +317,8 @@ class PiecewiseLinear(Distribution):
 
         return quantile
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.gamma.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
 
 class PiecewiseLinearOutput(DistributionOutput):
@@ -374,9 +362,6 @@ class PiecewiseLinearOutput(DistributionOutput):
                 distr, [AffineTransformation(loc=loc, scale=scale)]
             )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
 
 class FixedKnotsArgProj(ArgProj):
@@ -388,15 +373,6 @@ class FixedKnotsArgProj(ArgProj):
                 "knot_spacings", knot_spacings
             )
 
-    def hybrid_forward(self, F, x: Tensor, **kwargs) -> Tuple[Tensor]:
-        params_unbounded = [proj(x) for proj in self.proj]
-        knot_spacings = kwargs["knot_spacings"]
-
-        ks_proj = F.broadcast_add(
-            params_unbounded[0].zeros_like(), knot_spacings
-        )
-
-        return self.domain_map(*params_unbounded, ks_proj)
 
 
 class FixedKnotsPiecewiseLinearOutput(PiecewiseLinearOutput):

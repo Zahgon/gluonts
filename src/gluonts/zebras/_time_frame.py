@@ -62,65 +62,14 @@ class TimeFrame(TimeBase):
             f"Expected: {len(self)}, got {len(self.index)}."
         )
 
-    def eq_shape(self, other: TimeFrame) -> bool:
-        if (
-            len(self) != len(other)
-            or self.index != other.index
-            or self.tdims != other.tdims
-            or self.columns.keys() != other.columns.keys()
-            or self.static.keys() != other.static.keys()
-        ):
-            return False
 
-        for _, left, right in join_items(self.columns, other.columns, "left"):
-            if left.shape != right.shape:
-                return False
-
-        for _, left, right in join_items(self.static, other.static, "left"):
-            if left.shape != right.shape:
-                return False
-
-        return True
-
-    def eq_to(self, other: TimeFrame) -> bool:
-        # not considered: Pad, metadata, default_tdim
-
-        if not self.eq_shape(other):
-            return False
-
-        for _, left, right in join_items(self.columns, other.columns, "left"):
-            if not np.array_equal(left, right):
-                return False
-
-        for _, left, right in join_items(self.static, other.static, "left"):
-            if not np.array_equal(left, right):
-                return False
-
-        return True
 
     def _time_view(self, column):
         """
         View of column with respect to time.
         """
+        pass
 
-        return AxisView(self.columns[column], self.tdims[column])
-
-    def _slice_tdim(self, idx):
-        start, stop, step = idx.indices(len(self))
-        assert step == 1
-
-        pad_left = max(0, self._pad.left - start)
-        pad_right = max(0, self._pad.right + stop + 1 - len(self) - pad_left)
-
-        return _replace(
-            self,
-            columns={
-                column: self._time_view(column)[idx] for column in self.columns
-            },
-            index=maybe.map(self.index, itemgetter(idx)),
-            length=stop - start,
-            _pad=Pad(pad_left, pad_right),
-        )
 
     def __getitem__(self, idx: Union[slice, int, str]):
         if isinstance(idx, (slice, int)):
@@ -185,66 +134,7 @@ class TimeFrame(TimeBase):
         columns = ", ".join(self.columns)
         return f"TimeFrame<size={len(self)}, columns=[{columns}]>"
 
-    def _table_columns(self):
-        columns = {}
 
-        if self.index is not None:
-            index = pluck_attr(self.index, "data")
-            if len(self) > 10:
-                index = [
-                    *index[:5],
-                    f"[ ... {len(self) - 10} ... ]",
-                    *index[-5:],
-                ]
-
-            columns[""] = index
-
-        def move_axis(data, name):
-            return np.moveaxis(data, self.tdims[name], 0)
-
-        if len(self) > 10:
-            head = self.head(5)
-            tail = self.tail(5)
-
-            columns.update(
-                {
-                    col: [
-                        *(move_axis(head[col], col)),
-                        f"[ ... {len(self) - 10} ... ]",
-                        *(move_axis(tail[col], col)),
-                    ]
-                    for col in self.columns
-                }
-            )
-        else:
-            columns.update(
-                {
-                    name: move_axis(values, name)
-                    for name, values in self.columns.items()
-                }
-            )
-
-        return columns
-
-    def _repr_html_(self):
-        columns = self._table_columns()
-
-        html = [
-            html_table(columns),
-            f"{len(self)} rows × {len(self.columns)} columns",
-        ]
-
-        if self.static:
-            html.extend(
-                [
-                    "<h3>Static Data</h3>",
-                    html_table(
-                        {name: [val] for name, val in self.static.items()}
-                    ),
-                ]
-            )
-
-        return "\n".join(html)
 
     @classmethod
     def from_pandas(cls, df):
@@ -266,26 +156,8 @@ class TimeFrame(TimeBase):
             tdims={name: -1 for name in df.columns},
         )
 
-    def set(self, name, value, tdim=None):
-        assert name not in self.static
 
-        tdim = maybe.unwrap_or(tdim, self.default_tdim)
 
-        return _replace(
-            self,
-            columns=merge(self.columns, {name: value}),
-            tdims=merge(self.tdims, {name: tdim}),
-        )
-
-    def set_static(self, name, value):
-        assert name not in self.columns
-
-        return _replace(self, static=merge(self.static, {name: value}))
-
-    def set_like(self, ref: str, column, value, tdim=None):
-        assert ref in self.columns
-
-        return self.set(column, value, tdim)
 
     def remove(self, column):
         return _replace(
@@ -294,14 +166,7 @@ class TimeFrame(TimeBase):
             tdims=dissoc(self.tdims, column),
         )
 
-    def remove_static(self, name):
-        return _replace(self, static=dissoc(self.static, name))
 
-    def like(self, columns=None, static=None):
-        columns = maybe.unwrap_or(columns, {})
-        static = maybe.unwrap_or(static, {})
-
-        return _replace(self, columns=columns, static=static)
 
     def rename(self, mapping=None, **kwargs):
         """
@@ -332,16 +197,7 @@ class TimeFrame(TimeBase):
         ``rename({"target": "source"})``. For convenience one can use keyword
         parameters (`.rename(target="source")).
         """
-        if mapping is None:
-            mapping = {}
-        mapping.update(kwargs)
-
-        static = dissoc(self.static, *mapping.values())
-
-        for target, source in mapping.items():
-            static[target] = self.static[source]
-
-        return _replace(self, static=static)
+        pass
 
     def stack(
         self,
@@ -368,16 +224,6 @@ class TimeFrame(TimeBase):
 
         return _replace(self, columns=columns, tdims=tdims)
 
-    def as_dict(self, prefix=None, static=True):
-        result = dict(self.columns)
-
-        if prefix is not None:
-            result = {prefix + key: value for key, value in result.items()}
-
-        if static:
-            result.update(self.static)
-
-        return result
 
     def rolsplit(
         self,
@@ -416,20 +262,7 @@ class TimeFrame(TimeBase):
         -------
             A stream of ``zebras.SplitFrame`` objects.
         """
-        if not isinstance(index, (int, np.integer)):
-            # If `index` is provided as timestamp we turn it into an integer.
-            index = self.index_of(index)
-        elif index < 0:
-            # Ensure index is >= 0; (turn negative values into positive ones)
-            index = len(self) + index
-
-        for split_index in take(
-            n,
-            range(index, len(self) + 1 - distance, distance),
-        ):
-            yield self.split(
-                split_index, past_length, future_length, pad_value
-            )
+        pass
 
     def split(
         self,
@@ -473,14 +306,6 @@ class TimeFrame(TimeBase):
         # on the left.
         index += pad_left
 
-        def split_item(item):
-            name, data = item
-
-            tdim = self.tdims[name]
-            past, future = np.split(data, [index], tdim)
-            past = AxisView(past, tdim)[-past_length:]
-            future = AxisView(future, tdim)[:future_length]
-            return name, (past, future)
 
         past, future = columns_to_rows(itemmap(split_item, self.columns))
 
@@ -505,26 +330,6 @@ class TimeFrame(TimeBase):
     def __len__(self) -> int:
         return self.length
 
-    @staticmethod
-    def _batch(xs: List[TimeFrame]) -> BatchTimeFrame:
-        # TODO: Check
-        ref = xs[0]
-        pluck = pluck_attr(xs)
-
-        tdims = valmap(
-            lambda tdim: tdim + 1 if tdim >= 0 else tdim,
-            ref.tdims,
-        )
-
-        return BatchTimeFrame(
-            columns=rows_to_columns(pluck("columns"), np.stack),  # type: ignore
-            index=pluck("index"),
-            static=rows_to_columns(pluck("static"), np.stack),  # type: ignore
-            length=ref.length,
-            tdims=tdims,
-            metadata=pluck("metadata"),
-            _pad=pluck("_pad"),
-        )
 
 
 @dataclasses.dataclass
@@ -537,24 +342,10 @@ class BatchTimeFrame:
     metadata: Collection[Optional[dict]]
     _pad: Collection[Pad]
 
-    @property
-    def batch_size(self):
-        return len(self.index)
 
     def __len__(self):
         return self.length
 
-    def like(self, columns=None, static=None, tdims=None):
-        columns = maybe.unwrap_or(columns, {})
-        static = maybe.unwrap_or(static, {})
-
-        tdims = maybe.unwrap_or(tdims, {})
-        for name in columns:
-            tdims.setdefault(name, -1)
-
-        return _replace(
-            self, columns=columns, index=self.index, static=static, tdims=tdims
-        )
 
     def items(self):
         return BatchTimeFrameItems(self)
@@ -569,8 +360,6 @@ class BatchTimeFrame:
             _pad=self._pad,
         )
 
-    def as_dict(self, prefix=None, static=True):
-        return TimeFrame.as_dict(self, prefix, static)
 
 
 @dataclasses.dataclass(repr=False)

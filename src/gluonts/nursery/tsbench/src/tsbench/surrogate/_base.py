@@ -67,14 +67,14 @@ class Surrogate(ABC, Generic[T]):
         """
         The number of CPUs required for fitting the surrogate.
         """
-        return 1
+        pass
 
     @property
     def required_memory(self) -> int:
         """
         The amount of memory in GiB required for fitting the surrogate.
         """
-        return 1
+        pass
 
     def fit(self, X: list[Config[T]], y: list[Performance]) -> None:
         """

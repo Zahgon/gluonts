@@ -103,7 +103,7 @@ class Callback:
         bool
             A boolean whether the training should continue. Defaults to `True`.
         """
-        return True
+        pass
 
     def on_validation_batch_end(
         self, training_network: nn.HybridBlock
@@ -122,7 +122,7 @@ class Callback:
         bool
             A boolean whether the training should continue. Defaults to `True`.
         """
-        return True
+        pass
 
     def on_train_epoch_end(
         self,
@@ -151,7 +151,7 @@ class Callback:
         bool
             A boolean whether the training should continue. Defaults to `True`.
         """
-        return True
+        pass
 
     def on_validation_epoch_end(
         self,
@@ -183,7 +183,7 @@ class Callback:
         bool
             A boolean whether the training should continue. Defaults to `True`.
         """
-        return True
+        pass
 
     def on_epoch_end(
         self,
@@ -273,29 +273,13 @@ class CallbackList(Callback):
             for callback in self.callbacks
         ]
 
-    def on_train_start(self, *args: Any, **kwargs: Any) -> None:
-        self._exec("on_train_start", *args, **kwargs)
 
-    def on_network_initializing_end(self, *args: Any, **kwargs: Any) -> None:
-        self._exec("on_network_initializing_end", *args, **kwargs)
 
-    def on_train_epoch_start(self, *args: Any, **kwargs: Any) -> None:
-        self._exec("on_train_epoch_start", *args, **kwargs)
 
-    def on_validation_epoch_start(self, *args: Any, **kwargs: Any) -> None:
-        self._exec("on_validation_epoch_start", *args, **kwargs)
 
-    def on_train_batch_end(self, *args: Any, **kwargs: Any) -> bool:
-        return all(self._exec("on_train_batch_end", *args, **kwargs))
 
-    def on_validation_batch_end(self, *args: Any, **kwargs: Any) -> bool:
-        return all(self._exec("on_validation_batch_end", *args, **kwargs))
 
-    def on_train_epoch_end(self, *args: Any, **kwargs: Any) -> bool:
-        return all(self._exec("on_train_epoch_end", *args, **kwargs))
 
-    def on_validation_epoch_end(self, *args: Any, **kwargs: Any) -> bool:
-        return all(self._exec("on_validation_epoch_end", *args, **kwargs))
 
     def on_epoch_end(self, *args: Any, **kwargs: Any) -> bool:
         return all(self._exec("on_epoch_end", *args, **kwargs))
@@ -310,42 +294,10 @@ class TrainingHistory(Callback):
         self.loss_history = []
         self.validation_loss_history = []
 
-    def on_train_epoch_end(
-        self,
-        epoch_no: int,
-        epoch_loss: float,
-        training_network: nn.HybridBlock,
-        trainer: gluon.Trainer,
-    ) -> bool:
-        self.loss_history.append(epoch_loss)
-        return True
 
-    def on_validation_epoch_end(
-        self,
-        epoch_no: int,
-        epoch_loss: float,
-        training_network: nn.HybridBlock,
-        trainer: gluon.Trainer,
-    ) -> bool:
-        self.validation_loss_history.append(epoch_loss)
-        return True
 
 
 class TerminateOnNaN(Callback):
-    def on_train_epoch_end(
-        self,
-        epoch_no: int,
-        epoch_loss: float,
-        training_network: nn.HybridBlock,
-        trainer: gluon.Trainer,
-    ) -> bool:
-        if math.isnan(epoch_loss):
-            logging.warning(
-                "TerminateOnNaN Callback initiated stop of training at epoch"
-                f" {epoch_no}."
-            )
-            return False
-        return True
 
 
 class WarmStart(Callback):
@@ -353,10 +305,6 @@ class WarmStart(Callback):
     def __init__(self, predictor):
         self.predictor = predictor
 
-    def on_network_initializing_end(
-        self, training_network: nn.HybridBlock
-    ) -> None:
-        copy_parameters(self.predictor.prediction_net, training_network)
 
 
 @dataclass
@@ -397,14 +345,7 @@ class TrainingTimeLimit(BaseModel, Callback):
         super().__init__(**data)
         self._timer = _Timer(self.time_limit)
 
-    def on_train_start(self, max_epochs: int) -> None:
-        self._timer.start()
 
-    def on_train_batch_end(self, training_network: nn.HybridBlock) -> bool:
-        if self.stop_within_epoch:
-            return self._timer.is_running()
-
-        return True
 
     def on_epoch_end(
         self,

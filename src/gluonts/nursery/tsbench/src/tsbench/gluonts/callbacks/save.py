@@ -57,28 +57,5 @@ class ModelSaverCallback(Callback):  # type: ignore
         self.num_gradient_updates: List[int] = []
         self.milestones = milestones
 
-    def on_train_start(self, trainer: Trainer) -> None:
-        self.seq = 0
-        self.batch_count = 0
-        self.network = None
-        self.saved_parameters = []
-        self.training_times = []
-        self.num_gradient_updates = []
 
-    def on_network_initialization_end(self, network: nn.HybridBlock) -> None:
-        self.network = network
 
-    def on_train_batch_end(
-        self, network: nn.HybridBlock, time_elapsed: float
-    ) -> None:
-        self.batch_count += 1
-        if (
-            len(self.milestones) > self.seq
-            and time_elapsed > self.milestones[self.seq]
-        ):
-            file = self.directory / f"model_{self.seq}.params"
-            network.save_parameters(file.absolute().as_posix())
-            self.saved_parameters.append(file)
-            self.training_times.append(time_elapsed)
-            self.num_gradient_updates.append(self.batch_count)
-            self.seq += 1

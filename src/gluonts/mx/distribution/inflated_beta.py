@@ -202,13 +202,7 @@ class ZeroAndOneInflatedBetaOutput(DistributionOutput):
             one_probability.squeeze(axis=-1),
         )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def value_in_support(self) -> float:
-        return 0.5
 
 
 class ZeroInflatedBetaOutput(ZeroAndOneInflatedBetaOutput):

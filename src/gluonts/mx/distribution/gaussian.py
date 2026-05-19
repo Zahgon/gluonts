@@ -49,17 +49,8 @@ class Gaussian(Distribution):
     def F(self):
         return getF(self.mu)
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.mu.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     def log_prob(self, x: Tensor) -> Tensor:
         F = self.F
@@ -74,9 +65,6 @@ class Gaussian(Distribution):
     def mean(self) -> Tensor:
         return self.mu
 
-    @property
-    def stddev(self) -> Tensor:
-        return self.sigma
 
     @classmethod
     def fit(cls, F, samples: Tensor):
@@ -120,11 +108,6 @@ class Gaussian(Distribution):
     def sample_rep(
         self, num_samples: Optional[int] = None, dtype=np.float32
     ) -> Tensor:
-        def s(mu: Tensor, sigma: Tensor) -> Tensor:
-            raw_samples = self.F.sample_normal(
-                mu=mu.zeros_like(), sigma=sigma.ones_like(), dtype=dtype
-            )
-            return sigma * raw_samples + mu
 
         return _sample_multiple(
             s, mu=self.mu, sigma=self.sigma, num_samples=num_samples
@@ -144,9 +127,6 @@ class Gaussian(Distribution):
             ),
         )
 
-    @property
-    def args(self) -> List:
-        return [self.mu, self.sigma]
 
 
 class GaussianOutput(DistributionOutput):
@@ -177,6 +157,3 @@ class GaussianOutput(DistributionOutput):
         sigma = F.maximum(softplus(F, sigma), cls.eps())
         return mu.squeeze(axis=-1), sigma.squeeze(axis=-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

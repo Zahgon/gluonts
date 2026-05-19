@@ -25,17 +25,6 @@ from gluonts.exceptions import GluonTSDataError
 parse_bool = compose_left(strtobool, bool)
 
 
-def parse_attribute(ty, value: str):
-    if ty == "numeric":
-        return int(value)
-
-    if ty == "string":
-        return value
-
-    if ty == "date":
-        return datetime.strptime(value, "%Y-%m-%d %H-%M-%S")
-
-    raise AttributeError(ty)
 
 
 def frequency_converter(freq: str):
@@ -126,34 +115,7 @@ class TSFReader:
 
         return False
 
-    def _read_data(self, line):
-        parts = line.split(":")
-        assert len(parts) == len(
-            self.meta.columns
-        ), "Missing attributes/values in series."
 
-        *attributes, target = parts
-
-        record = {}
-
-        record[self.target_name] = self._data_target(target)
-
-        for (column, ty), attr in zip(self.meta.columns.items(), attributes):
-            record[column] = parse_attribute(ty, attr)
-
-        return record
-
-    def _data_target(self, s):
-        s = s.replace("?", '"nan"')
-
-        values = json.loads(f"[{s}]")
-        assert values, (
-            "A given series should contains a set of comma separated numeric"
-            " values. At least one numeric value should be there in a series."
-            " Missing values should be indicated with ? symbol"
-        )
-
-        return np.array(values, dtype=float)
 
     def _tag(self, line):
         fn_by_tag = {
@@ -171,20 +133,8 @@ class TSFReader:
 
         return fn_by_tag[tag](*args)
 
-    def _tag_attribute(self, name, ty):
-        self.meta.columns[name] = ty
 
-    def _tag_frequency(self, frequency):
-        self.meta.frequency = frequency
 
-    def _tag_horizon(self, horizon):
-        self.meta.forecast_horizon = horizon
 
-    def _tag_missing(self, missing):
-        self.meta.has_missing_values = parse_bool(missing)
 
-    def _tag_equallength(self, equallength):
-        self.meta.has_equal_length = parse_bool(equallength)
 
-    def _tag_data(self):
-        return True

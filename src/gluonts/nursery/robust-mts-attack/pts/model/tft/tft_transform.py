@@ -40,15 +40,6 @@ class BroadcastTo(MapTransformation):
         self.ext_length = ext_length
         self.target_field = target_field
 
-    def map_transform(self, data: DataEntry, is_train: bool) -> DataEntry:
-        length = target_transformation_length(
-            data[self.target_field], self.ext_length, is_train
-        )
-        data[self.field] = np.broadcast_to(
-            data[self.field],
-            (data[self.field].shape[:-1] + (length,)),
-        )
-        return data
 
 
 class TFTInstanceSplitter(InstanceSplitter):
@@ -89,57 +80,3 @@ class TFTInstanceSplitter(InstanceSplitter):
         self.observed_value_field = observed_value_field
         self.past_ts_fields = past_time_series_fields
 
-    def flatmap_transform(
-        self, data: DataEntry, is_train: bool
-    ) -> Iterator[DataEntry]:
-        pl = self.future_length
-        lt = self.lead_time
-        target = data[self.target_field]
-
-        sampled_indices = self.instance_sampler(target)
-
-        slice_cols = (
-            self.ts_fields
-            + self.past_ts_fields
-            + [self.target_field, self.observed_value_field]
-        )
-        for i in sampled_indices:
-            pad_length = max(self.past_length - i, 0)
-            d = data.copy()
-
-            for field in slice_cols:
-                if i >= self.past_length:
-                    past_piece = d[field][..., i - self.past_length : i]
-                else:
-                    pad_block = np.full(
-                        shape=d[field].shape[:-1] + (pad_length,),
-                        fill_value=self.dummy_value,
-                        dtype=d[field].dtype,
-                    )
-                    past_piece = np.concatenate(
-                        [pad_block, d[field][..., :i]], axis=-1
-                    )
-                future_piece = d[field][..., (i + lt) : (i + lt + pl)]
-                if field in self.ts_fields:
-                    piece = np.concatenate([past_piece, future_piece], axis=-1)
-                    if self.output_NTC:
-                        piece = piece.transpose()
-                    d[field] = piece
-                else:
-                    if self.output_NTC:
-                        past_piece = past_piece.transpose()
-                        future_piece = future_piece.transpose()
-                    if field not in self.past_ts_fields:
-                        d[self._past(field)] = past_piece
-                        d[self._future(field)] = future_piece
-                        del d[field]
-                    else:
-                        d[field] = past_piece
-            pad_indicator = np.zeros(self.past_length)
-            if pad_length > 0:
-                pad_indicator[:pad_length] = 1
-            d[self._past(self.is_pad_field)] = pad_indicator
-            d[self.forecast_start_field] = shift_timestamp(
-                d[self.start_field], i + lt
-            )
-            yield d

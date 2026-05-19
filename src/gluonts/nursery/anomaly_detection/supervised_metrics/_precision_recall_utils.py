@@ -45,65 +45,9 @@ def singleton_precision_recall(
     precision: float
     recall: float
     """
-    precision = 0.0
-    recall = 0
-
-    tp = np.sum(true_labels * pred_labels)
-    true_cond_p = np.sum(true_labels)
-    pred_cond_p = np.sum(pred_labels)
-
-    if pred_cond_p > 0:
-        precision = tp / pred_cond_p
-    if true_cond_p > 0:
-        recall = tp / true_cond_p
-
-    return precision, recall
+    pass
 
 
-def precision_recall_curve_per_ts(
-    labels: List[bool],
-    scores: List[float],
-    thresholds: np.ndarray,
-    partial_filter: Optional[Callable] = None,
-    singleton_curve: bool = False,
-    precision_recall_fn: Callable = buffered_precision_recall,
-) -> PrecisionRecallAndWeights:
-    true_ranges = labels_to_ranges(labels)
-    precisions = np.zeros(len(thresholds))
-    recalls = np.zeros(len(thresholds))
-
-    precision_weights, recall_weights = (
-        np.zeros(len(thresholds)),
-        np.zeros(len(thresholds)),
-    )
-
-    for ix, th in enumerate(thresholds):
-        if partial_filter is None:
-            pred_labels = scores >= th
-        else:
-            pred_labels = partial_filter(th)
-
-        if singleton_curve:
-            true_labels_np = np.array(labels, dtype=float)
-            pred_labels_np = np.array(pred_labels, dtype=float)
-            _prec, _reca = singleton_precision_recall(
-                true_labels_np, pred_labels_np
-            )
-            _prec_w, _reca_w = np.sum(pred_labels_np), np.sum(true_labels_np)
-        else:
-            pred_ranges = labels_to_ranges(pred_labels)
-            _prec, _reca = precision_recall_fn(true_ranges, pred_ranges)
-            _prec_w, _reca_w = len(pred_ranges), len(true_ranges)
-
-        precisions[ix] += _prec * _prec_w
-        recalls[ix] += _reca * _reca_w
-
-        precision_weights[ix] += _prec_w
-        recall_weights[ix] += _reca_w
-
-    return PrecisionRecallAndWeights(
-        precisions, recalls, precision_weights, recall_weights
-    )
 
 
 def aggregate_precision_recall_curve(

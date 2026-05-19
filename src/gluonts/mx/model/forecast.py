@@ -90,20 +90,13 @@ class DistributionForecast(Forecast):
         """
         Forecast mean, as a pandas.Series object.
         """
-        return pd.Series(self.mean, index=self.index)
+        pass
 
     def quantile(self, level: Union[float, str]) -> np.ndarray:
         level = Quantile.parse(level).value
         q = self.distribution.quantile(mx.nd.array([level])).asnumpy()[0]
         return q
 
-    def to_sample_forecast(self, num_samples: int = 200) -> SampleForecast:
-        return SampleForecast(
-            samples=self.distribution.sample(num_samples),
-            start_date=self.start_date,
-            item_id=self.item_id,
-            info=self.info,
-        )
 
     def to_quantile_forecast(self, quantiles: List[Union[float, str]]):
         return QuantileForecast(

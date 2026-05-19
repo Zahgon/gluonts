@@ -50,39 +50,7 @@ class ModelTracker(Tracker[ModelConfig]):
         Returns:
             The tracker with all the available data.
         """
-        # Generate the filename including all kwargs
-        kwargs_suffix = "-".join(
-            f"{k}_{v}" for k, v in sorted(kwargs.items(), key=lambda i: i[0])
-        )
-        if len(kwargs_suffix) > 0:
-            kwargs_suffix = f"+{kwargs_suffix}"
-
-        # If available in cache, return
-        cache = (
-            Path.home()
-            / ".cache"
-            / "tsbench"
-            / f"experiment-{name}{kwargs_suffix}.pickle"
-        )
-        if cache.exists() and not force_refresh:
-            with cache.open("rb") as f:
-                return pickle.load(f)
-
-        # Initialize connection to AWS
-        analysis = aws.Analysis(name)
-        assert all(
-            job.status == "Completed" for job in analysis
-        ), "Not all jobs have completed."
-
-        # Initialize tracker
-        jobs = load_jobs_from_analysis(analysis)
-        tracker = ModelTracker(jobs, **kwargs)
-
-        # Cache tracker and return
-        cache.parent.mkdir(parents=True, exist_ok=True)
-        with cache.open("wb+") as f:
-            pickle.dump(tracker, f)
-        return tracker
+        pass
 
     @classmethod
     def from_directory(cls, directory: Path, **kwargs: Any) -> ModelTracker:
@@ -176,7 +144,7 @@ class ModelTracker(Tracker[ModelConfig]):
         Returns:
             The list of all training jobs.
         """
-        return self.config_map[config].jobs
+        pass
 
     def get_forecasts(
         self, config: Config[ModelConfig]

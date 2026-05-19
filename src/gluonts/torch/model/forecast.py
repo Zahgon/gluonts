@@ -83,7 +83,7 @@ class DistributionForecast(Forecast):
         """
         Forecast mean, as a pandas.Series object.
         """
-        return pd.Series(data=self.mean, index=self.index)
+        pass
 
     def quantile(self, level: Union[float, str]) -> np.ndarray:
         level = Quantile.parse(level).value
@@ -95,12 +95,3 @@ class DistributionForecast(Forecast):
             .numpy()
         )
 
-    def to_sample_forecast(self, num_samples: int = 200) -> SampleForecast:
-        return SampleForecast(
-            samples=self.distribution.sample(torch.Size((num_samples,)))
-            .cpu()
-            .numpy(),
-            start_date=self.start_date,
-            item_id=self.item_id,
-            info=self.info,
-        )

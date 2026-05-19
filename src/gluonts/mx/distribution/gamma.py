@@ -49,17 +49,8 @@ class Gamma(Distribution):
     def F(self):
         return getF(self.alpha)
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.alpha.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     def log_prob(self, x: Tensor) -> Tensor:
         F = self.F
@@ -96,9 +87,6 @@ class Gamma(Distribution):
     def mean(self) -> Tensor:
         return self.alpha / self.beta
 
-    @property
-    def stddev(self) -> Tensor:
-        return self.F.sqrt(self.alpha) / self.beta
 
     def sample(
         self, num_samples: Optional[int] = None, dtype=np.float32
@@ -114,9 +102,6 @@ class Gamma(Distribution):
         )
         return F.clip(data=samples, a_min=epsilon, a_max=np.finfo(dtype).max)
 
-    @property
-    def args(self) -> List:
-        return [self.alpha, self.beta]
 
 
 class GammaOutput(DistributionOutput):
@@ -147,10 +132,4 @@ class GammaOutput(DistributionOutput):
         beta = F.maximum(softplus(F, beta), cls.eps())
         return alpha.squeeze(axis=-1), beta.squeeze(axis=-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def value_in_support(self) -> float:
-        return 0.5

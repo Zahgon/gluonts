@@ -158,26 +158,6 @@ def train(p, trainer, model, num_epochs=1000):
     return p_approx
 
 
-def lv_plot_ts(
-    p, p_approx, max_num_plots=10, num_rows=2, fig_size_width=10
-):  # plots all time series at corresponding time point
-    plt.rcParams["figure.figsize"] = (fig_size_width, 5)
-    num_ts = p.shape[0]
-    N = p.shape[1]
-    t = np.arange(N)
-    num_plots = min(num_ts, max_num_plots)
-    num_cols = int(num_plots / num_rows)
-    fig, axs = plt.subplots(num_rows, num_cols)
-    for ts_idx in range(num_plots):
-        plt.subplot(num_rows, num_cols, ts_idx + 1)
-        plt.plot(
-            t, p[ts_idx, :].asnumpy(), t, p_approx[ts_idx, :].asnumpy(), "r--"
-        )
-        plt.ylabel(f"$p_{ts_idx}(t)$")
-        plt.xlabel("t")
-        plt.legend(("Exact", "Approx"))
-        plt.xlabel("time: $t$")
-        plt.ylabel(f"$p_{ts_idx}(t)$")
 
 
 # Compute B^Tz, where z = C*p, C = B in the symmetic case
@@ -197,23 +177,3 @@ def compute_low_rank_product(B, C):
 
 
 # Returns random samples fromuniform distribution [0,1] can change to randn for normally distributed random values
-def generate_data(
-    num_ts, ctx=mx.gpu(), dtype="float64", seed=100
-):  # num_ts = d
-    np.random.seed(seed)
-    # vector of shape (num_ts, )
-    r = np.random.rand(num_ts)
-    # vector of shape (num_ts, )
-    k = np.random.rand(num_ts)
-    # matrix of shape (num_ts, num_ts)
-    A = np.random.rand(num_ts, num_ts)
-    # diagonal entries are 1 representing intraspecies competition
-    np.fill_diagonal(A, 1)
-    # initial condition vector of shape (num_ts, )
-    p0 = np.random.rand(num_ts)
-    return (
-        nd.array(r, ctx=ctx, dtype=dtype),
-        nd.array(k, ctx=ctx, dtype=dtype),
-        nd.array(p0, ctx=ctx, dtype=dtype),
-        nd.array(A, ctx=ctx, dtype=dtype),
-    )

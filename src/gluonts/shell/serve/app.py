@@ -123,17 +123,8 @@ def log_throughput(instances, timings):
 def get_base_app(execution_params):
     app = Flask("GluonTS scoring service")
 
-    @app.errorhandler(Exception)
-    def handle_error(error) -> Tuple[str, int]:
-        return traceback.format_exc(), 500
 
-    @app.route("/ping")
-    def ping() -> str:
-        return ""
 
-    @app.route("/execution-parameters")
-    def execution_parameters() -> Response:
-        return jsonify(execution_params)
 
     return app
 
@@ -168,8 +159,6 @@ def inference_invocations(predictor_factory) -> Callable[[], Response]:
     return invocations
 
 
-def do(fn, args, queue):
-    queue.put(fn(*args))
 
 
 def with_timeout(fn, args, timeout):
@@ -295,14 +284,6 @@ def batch_inference_invocations(
         lines = list(map(json.dumps, map(encode_json, predictions)))
         return Response("\n".join(lines), mimetype="application/jsonlines")
 
-    def invocations_error_wrapper() -> Response:
-        try:
-            return invocations()
-        except Exception:
-            return Response(
-                json.dumps({"error": traceback.format_exc()}),
-                mimetype="application/jsonlines",
-            )
 
     if settings.gluonts_batch_suppress_errors:
         return invocations_error_wrapper

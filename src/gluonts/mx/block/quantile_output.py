@@ -134,27 +134,7 @@ class QuantileLoss(Loss):
         Tensor
             weighted sum of the quantile losses, shape N1 x N1 x ... Nk
         """
-        if self.num_quantiles > 1:
-            y_pred_all = F.split(
-                y_pred, axis=-1, num_outputs=self.num_quantiles, squeeze_axis=1
-            )
-        else:
-            y_pred_all = [F.squeeze(y_pred, axis=-1)]
-
-        qt_loss = []
-        for level, weight, y_pred_q in zip(
-            self.quantiles, self.quantile_weights, y_pred_all
-        ):
-            qt_loss.append(
-                weight * self.compute_quantile_loss(F, y_true, y_pred_q, level)
-            )
-        stacked_qt_losses = F.stack(*qt_loss, axis=-1)
-        sum_qt_loss = F.mean(
-            stacked_qt_losses, axis=-1
-        )  # avg across quantiles
-        if sample_weight is not None:
-            return sample_weight * sum_qt_loss
-        return sum_qt_loss
+        pass
 
     @staticmethod
     def compute_quantile_loss(
@@ -213,9 +193,6 @@ class QuantileOutput:
         self.num_quantiles = len(self._quantiles)
         self.quantile_weights = quantile_weights
 
-    @property
-    def quantiles(self) -> List[float]:
-        return self._quantiles
 
     def get_loss(self) -> nn.HybridBlock:
         """
@@ -261,19 +238,6 @@ class IncrementalDenseLayerProjection(nn.HybridBlock):
                     activation="relu",
                 )  # increments between quantile estimates
 
-    def hybrid_forward(self, F, x: Tensor) -> Tensor:
-        return (
-            self.proj_intrcpt(x)
-            if self.num_outputs == 1
-            else (
-                F.cumsum(
-                    F.concat(
-                        self.proj_intrcpt(x), self.proj_incrmnt(x), dim=-1
-                    ),
-                    axis=3,
-                )
-            )
-        )
 
 
 class IncrementalQuantileOutput(QuantileOutput):

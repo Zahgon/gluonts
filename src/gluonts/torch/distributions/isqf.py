@@ -695,9 +695,6 @@ class ISQF(torch.distributions.Distribution):
 
         return sample
 
-    @property
-    def batch_shape(self) -> torch.Size:
-        return self.beta_l.shape
 
 
 class ISQFOutput(DistributionOutput):
@@ -844,9 +841,6 @@ class ISQFOutput(DistributionOutput):
 
         return distr_args_reshape, qk_x_repeat
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
 
 class TransformedISQF(TransformedDistribution):

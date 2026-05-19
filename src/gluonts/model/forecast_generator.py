@@ -68,13 +68,7 @@ def _unpack(batched) -> Iterator:
          [3, (3, [3, 3, 3])],
          [4, (4, [4, 4, 4])]]
     """
-
-    if isinstance(batched, (list, tuple)):
-        T = type(batched)
-
-        return map(T, zip(*map(_unpack, batched)))
-
-    return batched
+    pass
 
 
 @singledispatch

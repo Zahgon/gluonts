@@ -56,12 +56,6 @@ class IndependentDistributionOutput(DistributionOutput):
     def __init__(self, dim: Optional[int] = None) -> None:
         self.dim = dim
 
-    @property
-    def event_shape(self) -> Tuple:
-        if self.dim is None:
-            return ()
-        else:
-            return (self.dim,)
 
     def independent(self, distr: Distribution) -> Distribution:
         if self.dim is None:
@@ -285,9 +279,6 @@ class StudentTMixtureOutput(DistributionOutput):
                 distr, [AffineTransform(loc=0, scale=scale)]
             )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
 
 class PiecewiseLinearOutput(DistributionOutput):
@@ -330,9 +321,6 @@ class PiecewiseLinearOutput(DistributionOutput):
                 distr, [AffineTransform(loc=0, scale=scale)]
             )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
 
 class NormalMixtureOutput(DistributionOutput):
@@ -365,9 +353,6 @@ class NormalMixtureOutput(DistributionOutput):
                 distr, [AffineTransform(loc=0, scale=scale)]
             )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
 
 class LowRankMultivariateNormalOutput(DistributionOutput):
@@ -405,9 +390,6 @@ class LowRankMultivariateNormalOutput(DistributionOutput):
         else:
             return y
 
-    @property
-    def event_shape(self) -> Tuple:
-        return (self.dim,)
 
 
 class MultivariateNormalOutput(DistributionOutput):
@@ -445,9 +427,6 @@ class MultivariateNormalOutput(DistributionOutput):
                 distr, [AffineTransform(loc=0, scale=scale)]
             )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return (self.dim,)
 
 
 class FlowOutput(DistributionOutput):
@@ -469,9 +448,6 @@ class FlowOutput(DistributionOutput):
 
         return self.flow
 
-    @property
-    def event_shape(self) -> Tuple:
-        return (self.dim,)
 
 
 class DiffusionOutput(DistributionOutput):
@@ -493,9 +469,6 @@ class DiffusionOutput(DistributionOutput):
 
         return self.diffusion
 
-    @property
-    def event_shape(self) -> Tuple:
-        return (self.dim,)
 
 
 class QuantilePtArgProj(PtArgProj):
@@ -593,6 +566,3 @@ class ImplicitQuantileOutput(IndependentDistributionOutput):
                 distr, [AffineTransform(loc=0, scale=scale)]
             )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

@@ -63,24 +63,6 @@ class ProphetDataEntry(NamedTuple):
     target: np.ndarray
     feat_dynamic_real: List[np.ndarray]
 
-    @property
-    def prophet_training_data(self) -> pd.DataFrame:
-        return pd.DataFrame(
-            data={
-                **{
-                    "ds": pd.period_range(
-                        start=self.start,
-                        periods=self.train_length,
-                        freq=self.start.freq,
-                    ).to_timestamp(),
-                    "y": self.target,
-                },
-                **{
-                    feat_name(i): feature[: self.train_length]
-                    for i, feature in enumerate(self.feat_dynamic_real)
-                },
-            }
-        )
 
     @property
     def forecast_start(self) -> pd.Period:

@@ -158,32 +158,4 @@ class GluonTSModel(FrameworkModel):
         Dict[str, str]:
             A container definition object usable with the CreateModel API.
         """
-
-        is_mms_version = parse_version(
-            self.framework_version
-        ) >= parse_version(self._LOWEST_MMS_VERSION)
-
-        deploy_image = self.image
-
-        # TODO implement proper logic handling images when none are provided by user
-        # Example implementation:
-        #   https://github.com/aws/sagemaker-python-sdk/blob/master/src/sagemaker/mxnet/model.py
-
-        logger.info(f"Using image: {deploy_image}")
-
-        deploy_key_prefix = model_code_key_prefix(
-            self.key_prefix, self.name, deploy_image
-        )
-        self._upload_code(deploy_key_prefix, is_mms_version)
-        deploy_env = dict(self.env)
-        deploy_env.update(self._framework_env_vars())
-
-        if self.model_server_workers:
-            deploy_env[MODEL_SERVER_WORKERS_PARAM_NAME.upper()] = str(
-                self.model_server_workers
-            )
-        return sagemaker.container_def(
-            deploy_image,
-            self.repacked_model_data or self.model_data,
-            deploy_env,
-        )
+        pass

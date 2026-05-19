@@ -151,21 +151,12 @@ class TruncatedNormal(Distribution):
         self._variance_non_std = self._variance * self.scale**2
         self._entropy_non_std = self._entropy + self._log_scale
 
-    @constraints.dependent_property
-    def support(self):
-        return constraints.interval(self.a, self.b)
 
     @property
     def mean(self):
         return self._mean_non_std
 
-    @property
-    def variance(self):
-        return self._variance_non_std
 
-    @property
-    def entropy(self):
-        return self._entropy_non_std
 
     @staticmethod
     def _little_phi(x):
@@ -291,6 +282,3 @@ class TruncatedNormalOutput(DistributionOutput):
             tanh_loc=self.tanh_loc,
         )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

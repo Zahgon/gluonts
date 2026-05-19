@@ -29,16 +29,6 @@ from tsbench.forecasts import EnsembleWeighting
 ex = Experiment()
 
 
-@ex.config
-def experiment_config():
-    # pylint: disable=unused-variable
-    experiment = "test"  # type: ignore
-    data_path = str(DEFAULT_DATA_PATH)  # type: ignore
-    evaluations_path = str(DEFAULT_EVALUATIONS_PATH)  # type: ignore
-
-    weighting = "uniform"  # type: ignore
-    size = 10  # type: ignore
-    model_class = None  # type: ignore
 
 
 @ex.automain

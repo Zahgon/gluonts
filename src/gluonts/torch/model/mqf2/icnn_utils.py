@@ -91,37 +91,7 @@ class DeepConvexNet(DeepConvexFlow):
         self.is_energy_score = is_energy_score
         self.estimate_logdet = estimate_logdet
 
-    def get_potential(
-        self, x: torch.Tensor, context: Optional[torch.Tensor] = None
-    ) -> torch.Tensor:
-        n = x.size(0)
-        output = self.picnn(x, context)
 
-        if self.is_energy_score:
-            return output
-        else:
-            return (
-                F.softplus(self.w1) * output
-                + F.softplus(self.w0)
-                * (x.view(n, -1) ** 2).sum(1, keepdim=True)
-                / 2
-            )
-
-    def forward_transform(
-        self,
-        x: torch.Tensor,
-        logdet: Optional[Union[float, torch.Tensor]] = 0.0,
-        context: Optional[torch.Tensor] = None,
-        extra: Optional[torch.Tensor] = None,
-    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-        if self.estimate_logdet:
-            return self.forward_transform_stochastic(
-                x, logdet, context=context, extra=extra
-            )
-        else:
-            return self.forward_transform_bruteforce(
-                x, logdet, context=context
-            )
 
 
 class SequentialNet(SequentialFlow):

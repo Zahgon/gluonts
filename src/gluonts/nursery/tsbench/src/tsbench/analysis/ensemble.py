@@ -251,14 +251,4 @@ class EnsembleAnalyzer:
         """
         TODO.
         """
-        results = []
-        for name, dataset in tqdm(DATASET_REGISTRY.items()):
-            performance = self.get_ensemble_performance(
-                models[name], dataset(data_path)
-            )
-            df = Performance.to_dataframe([performance]).assign(
-                test_dataset=name
-            )
-            results.append(df)
-
-        return pd.concat(results).set_index("test_dataset")
+        pass

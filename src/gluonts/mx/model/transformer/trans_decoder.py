@@ -95,27 +95,4 @@ class TransformerDecoder(HybridBlock):
         A transformer encoder block consists of a self-attention and a feed-
         forward layer with pre/post process blocks in between.
         """
-
-        # embedding
-        inputs = self.enc_input_layer(data)
-
-        # self-attention
-        data_att, cache = self.dec_self_att(
-            self.dec_pre_self_att(inputs, None),
-            mask,
-            self.cache.copy() if not is_train else None,
-        )
-        data = self.dec_post_self_att(data_att, inputs)
-
-        # encoder attention
-        data_att = self.dec_enc_att(data, enc_out)
-        data = self.dec_post_att(data_att, data)
-
-        # feed-forward
-        data_ff = self.dec_ff(data)
-        data = self.dec_post_ff(data_ff, data)
-
-        if not is_train:
-            self.cache = cache.copy()
-
-        return data
+        pass

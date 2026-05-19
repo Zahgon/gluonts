@@ -83,12 +83,7 @@ class Binned(torch.nn.Module):
         """
         Moves members to a specified torch.device.
         """
-        self.device = device
-        self.bin_min = self.bin_min.to(device)
-        self.bin_max = self.bin_max.to(device)
-        self.bin_edges = self.bin_edges.to(device)
-        self.bin_widths = self.bin_widths.to(device)
-        self.bin_centres = self.bin_centres.to(device)
+        pass
 
     def forward(self, x):
         """
@@ -357,13 +352,7 @@ class SplicedBinnedPareto(Binned):
         """
         Moves members to a specified torch.device.
         """
-        self.device = device
-        self.bin_min = self.bin_min.to(device)
-        self.bin_max = self.bin_max.to(device)
-        self.bin_edges = self.bin_edges.to(device)
-        self.bin_widths = self.bin_widths.to(device)
-        self.bin_centres = self.bin_centres.to(device)
-        self.logits = self.logits.to(device)
+        pass
 
     def forward(self, x):
         """Takes input x as the new parameters to specify the bin

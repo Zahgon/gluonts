@@ -223,10 +223,3 @@ def simulate(
         )
 
 
-def _evaluate_ensemble(
-    ensemble: Tuple[Tuple[ModelConfig], DatasetConfig],
-    evaluator: EnsembleAnalyzer,
-) -> Performance:
-    return evaluator.get_ensemble_performance(
-        list(ensemble[0]), ensemble[1], num_samples=3
-    )

@@ -96,7 +96,7 @@ class DistributionOutput(Output):
         Number of event dimensions, i.e., length of the `event_shape` tuple, of
         the distributions that this object constructs.
         """
-        return len(self.event_shape)
+        pass
 
     def domain_map(self, *args: torch.Tensor):
         r"""
@@ -122,9 +122,6 @@ class NormalOutput(DistributionOutput):
         scale = F.softplus(scale)
         return loc.squeeze(-1), scale.squeeze(-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
 
 class LaplaceOutput(DistributionOutput):
@@ -136,9 +133,6 @@ class LaplaceOutput(DistributionOutput):
         scale = F.softplus(scale)
         return loc.squeeze(-1), scale.squeeze(-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
 
 class BetaOutput(DistributionOutput):
@@ -154,13 +148,7 @@ class BetaOutput(DistributionOutput):
         concentration0 = F.softplus(concentration0) + epsilon
         return concentration1.squeeze(dim=-1), concentration0.squeeze(dim=-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def value_in_support(self) -> float:
-        return 0.5
 
 
 class GammaOutput(DistributionOutput):
@@ -174,13 +162,7 @@ class GammaOutput(DistributionOutput):
         rate = F.softplus(rate) + epsilon
         return concentration.squeeze(dim=-1), rate.squeeze(dim=-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def value_in_support(self) -> float:
-        return 0.5
 
 
 class PoissonOutput(DistributionOutput):
@@ -208,6 +190,3 @@ class PoissonOutput(DistributionOutput):
 
         return Poisson(rate=rate)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

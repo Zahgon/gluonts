@@ -120,93 +120,11 @@ class MultivariateGrouper:
             f"{self.first_timestamp}/{self.last_timestamp}"
         )
 
-    def _group_all(self, dataset: Dataset) -> Dataset:
-        if self.num_test_dates is None:
-            grouped_dataset = self._prepare_train_data(dataset)
-        else:
-            grouped_dataset = self._prepare_test_data(dataset)
-        return grouped_dataset
 
-    def _prepare_train_data(self, dataset: Dataset) -> Dataset:
-        logging.info("group training time series to datasets")
 
-        # Creates a single multivariate time series from the
-        # univariate series in the dataset
-        grouped_data = self._transform_target(self._align_data_entry, dataset)
-        grouped_data[FieldName.TARGET] = np.vstack(
-            grouped_data[FieldName.TARGET]
-        )
 
-        fields = next(iter(dataset), {}).keys()
-        if FieldName.FEAT_DYNAMIC_REAL in fields:
-            grouped_data[FieldName.FEAT_DYNAMIC_REAL] = np.vstack(
-                [data[FieldName.FEAT_DYNAMIC_REAL] for data in dataset],
-            )
-        grouped_data = self._restrict_max_dimensionality(grouped_data)
-        grouped_data[FieldName.START] = self.first_timestamp
-        grouped_data[FieldName.FEAT_STATIC_CAT] = [0]
 
-        return ListDataset(
-            [grouped_data], freq=self.frequency, one_dim_target=False
-        )
 
-    def _prepare_test_data(self, dataset: Dataset) -> Dataset:
-        assert self.num_test_dates is not None
-
-        logging.info("group test time series to datasets")
-
-        grouped_data = self._transform_target(self._left_pad_data, dataset)
-
-        # Splits test dataset with rolling date into N R^d time series,
-        # where N is the number of rolling evaluation dates
-        assert len(grouped_data[FieldName.TARGET]) % self.num_test_dates == 0
-        split_size = len(grouped_data[FieldName.TARGET]) // self.num_test_dates
-        split_dataset = batcher(grouped_data[FieldName.TARGET], split_size)
-
-        fields = next(iter(dataset), {}).keys()
-        all_entries = list()
-        for dataset_at_test_date in split_dataset:
-            grouped_data = dict()
-            grouped_data[FieldName.TARGET] = np.vstack(dataset_at_test_date)
-
-            if FieldName.FEAT_DYNAMIC_REAL in fields:
-                grouped_data[FieldName.FEAT_DYNAMIC_REAL] = np.vstack(
-                    [data[FieldName.FEAT_DYNAMIC_REAL] for data in dataset],
-                )
-            grouped_data = self._restrict_max_dimensionality(grouped_data)
-            grouped_data[FieldName.START] = self.first_timestamp
-            grouped_data[FieldName.FEAT_STATIC_CAT] = [0]
-            all_entries.append(grouped_data)
-
-        return ListDataset(
-            all_entries, freq=self.frequency, one_dim_target=False
-        )
-
-    def _align_data_entry(self, data: DataEntry) -> np.ndarray:
-        ts = self.to_ts(data)
-        return ts.reindex(
-            pd.period_range(
-                start=self.first_timestamp,
-                end=self.last_timestamp,
-                freq=data[FieldName.START].freq,
-            ),
-            fill_value=self.train_fill_function(ts),
-        ).values
-
-    def _left_pad_data(self, data: DataEntry) -> np.ndarray:
-        ts = self.to_ts(data)
-        return ts.reindex(
-            pd.period_range(
-                start=self.first_timestamp,
-                end=ts.index[-1],
-                freq=data[FieldName.START].freq,
-            ),
-            fill_value=self.test_fill_rule(ts),
-        ).values
-
-    @staticmethod
-    def _transform_target(funcs, dataset: Dataset) -> DataEntry:
-        return {FieldName.TARGET: [funcs(data) for data in dataset]}
 
     def _restrict_max_dimensionality(self, data: DataEntry) -> DataEntry:
         """
@@ -224,25 +142,5 @@ class MultivariateGrouper:
             data multivariate data entry with
             (max_target_dimension, num_timesteps) target field
         """
+        pass
 
-        if self.max_target_dimension is not None:
-            # restrict maximum dimensionality (for faster testing)
-            data[FieldName.TARGET] = data[FieldName.TARGET][
-                -self.max_target_dimension :, :
-            ]
-            if FieldName.FEAT_DYNAMIC_REAL in data.keys():
-                data[FieldName.FEAT_DYNAMIC_REAL] = data[
-                    FieldName.FEAT_DYNAMIC_REAL
-                ][-self.max_target_dimension :, :]
-        return data
-
-    @staticmethod
-    def to_ts(data: DataEntry) -> pd.Series:
-        return pd.Series(
-            data[FieldName.TARGET],
-            index=pd.period_range(
-                start=data[FieldName.START],
-                periods=len(data[FieldName.TARGET]),
-                freq=data[FieldName.START].freq,
-            ),
-        )

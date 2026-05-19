@@ -33,14 +33,3 @@ def partition(xs, n):
     )
 
 
-@partition.register(Sequence)
-def partition_sequence(xs: Sequence, n):
-    slices = divide_into(len(xs), n)
-
-    start = 0
-    partitions = []
-    for slice_length in slices:
-        partitions.append(xs[start : start + slice_length])
-        start += slice_length
-
-    return partitions

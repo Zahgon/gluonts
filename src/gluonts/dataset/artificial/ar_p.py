@@ -25,8 +25,6 @@ except ImportError:
     )
 
     # TODO: support parameters
-    def njit(fn):
-        return fn
 
 
 @njit
@@ -61,22 +59,4 @@ def ar_p(
         len `length`. If it is not provided, samples from a standard normal are
         used.
     """
-    phi_ = np.asarray(phi, dtype=np.float64)
-    xhist_ = np.asarray(xhist, dtype=np.float64)
-    assert len(phi_) > 0
-    assert len(xhist_) == len(phi_)
-    if noise is not None:
-        noise_ = np.asarray(noise, dtype=np.float64)
-        assert len(noise_) == length
-    else:
-        noise_ = np.random.randn(length).astype(np.float64)
-    p = len(xhist)
-    x = np.zeros(length + p, dtype=np.float64)
-    x[: len(xhist_)] = xhist_[:]
-    phi_ = np.asarray(phi, dtype=np.float64)
-    for t in range(p, length + p):
-        u = 0.0
-        for i in range(0, p):
-            u += phi_[i] * x[t - i - 1]
-        x[t] = c + u + sigma * noise_[t - p]
-    return x[p:]
+    pass

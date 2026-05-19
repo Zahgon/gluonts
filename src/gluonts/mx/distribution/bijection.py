@@ -64,7 +64,7 @@ class Bijection:
         Returns a Bijection instance that represents the inverse of this
         transformation.
         """
-        return InverseBijection(self)
+        pass
 
     @property
     def event_dim(self) -> int:
@@ -105,12 +105,7 @@ class InverseBijection(Bijection):
     def log_abs_det_jac(self, x: Tensor, y: Tensor) -> Tensor:
         return -self._bijection.log_abs_det_jac(y, x)
 
-    def inverse_bijection(self) -> Bijection:
-        return self._bijection
 
-    @property
-    def event_dim(self) -> int:
-        return self._bijection.event_dim
 
     @property
     def sign(self) -> Union[float, Tensor]:
@@ -130,13 +125,7 @@ class ComposedBijection(Bijection):
         if bijections is not None:
             self.__iadd__(bijections)
 
-    @property
-    def event_shape(self):
-        return self._bijections[0].event_shape
 
-    @property
-    def event_dim(self):
-        return self._bijections[0].event_dim
 
     def f(self, x: Tensor) -> Tensor:
         """
@@ -268,9 +257,6 @@ class _Exp(Bijection):
     def log_abs_det_jac(self, x: Tensor, y: Tensor) -> Tensor:
         return y.clip(1.0e-20, np.inf).log()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     @property
     def sign(self) -> float:
@@ -287,9 +273,6 @@ class _Log(Bijection):
     def log_abs_det_jac(self, x: Tensor, y: Tensor) -> Tensor:
         return -y
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     @property
     def sign(self) -> float:
@@ -317,9 +300,6 @@ class _Softrelu(Bijection):
         F = getF(y)
         return self._log_expm1(F, y) - y
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     @property
     def sign(self) -> float:
@@ -376,9 +356,6 @@ class AffineTransformation(Bijection):
     def sign(self) -> Union[float, Tensor]:
         return 1.0 if self.scale is None else self.scale.sign()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
 
 exp = _Exp()

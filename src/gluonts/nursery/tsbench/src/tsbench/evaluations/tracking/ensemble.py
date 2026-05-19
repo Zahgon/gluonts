@@ -56,7 +56,7 @@ class EnsembleTracker(Tracker[EnsembleConfig]):
         Returns the unique configurations of ensembles provided by this
         tracker.
         """
-        return list({c.model for c in self.performance_map})
+        pass
 
     def get_evaluations(self) -> Evaluations[EnsembleConfig]:
         return Evaluations(

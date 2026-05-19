@@ -114,15 +114,7 @@ class SimpleFeedForwardNetworkBase(mx.gluon.HybridBlock):
         Tensor
             An array containing the scale of the distribution.
         """
-        scaled_target, target_scale = self.scaler(
-            past_target,
-            F.ones_like(past_target),
-        )
-        mlp_outputs = self.mlp(scaled_target)
-        distr_args = self.distr_args_proj(mlp_outputs)
-        scale = target_scale.expand_dims(axis=1)
-        loc = F.zeros_like(scale)
-        return distr_args, loc, scale
+        pass
 
 
 class SimpleFeedForwardTrainingNetwork(SimpleFeedForwardNetworkBase):
@@ -155,20 +147,7 @@ class SimpleFeedForwardTrainingNetwork(SimpleFeedForwardNetworkBase):
         Tensor
             Loss tensor. Shape: (batch_size, ).
         """
-        distr_args, loc, scale = self.get_distr_args(F, past_target)
-        distr = self.distr_output.distribution(
-            distr_args, loc=loc, scale=scale
-        )
-
-        # (batch_size, prediction_length, target_dim)
-        loss = distr.loss(future_target)
-
-        weighted_loss = weighted_average(
-            F=F, x=loss, weights=future_observed_values, axis=1
-        )
-
-        # (batch_size, )
-        return weighted_loss
+        pass
 
 
 class SimpleFeedForwardSamplingNetwork(SimpleFeedForwardNetworkBase):
@@ -196,17 +175,7 @@ class SimpleFeedForwardSamplingNetwork(SimpleFeedForwardNetworkBase):
         Tensor
             Prediction sample. Shape: (batch_size, samples, prediction_length).
         """
-
-        distr_args, loc, scale = self.get_distr_args(F, past_target)
-        distr = self.distr_output.distribution(
-            distr_args, loc=loc, scale=scale
-        )
-
-        # (num_samples, batch_size, prediction_length)
-        samples = distr.sample(self.num_parallel_samples)
-
-        # (batch_size, num_samples, prediction_length)
-        return samples.swapaxes(0, 1)
+        pass
 
 
 class SimpleFeedForwardDistributionNetwork(SimpleFeedForwardNetworkBase):
@@ -238,5 +207,4 @@ class SimpleFeedForwardDistributionNetwork(SimpleFeedForwardNetworkBase):
         Tensor
             An array containing the scale of the distribution.
         """
-        distr_args, loc, scale = self.get_distr_args(F, past_target)
-        return distr_args, loc, scale
+        pass

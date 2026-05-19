@@ -22,19 +22,6 @@ from torch.distributions import Distribution
 from .activations import PositiveSoftplus
 
 
-def distribution_cat(distributions: List[Distribution], dim=0) -> Distribution:
-    args = list(distributions[0].arg_constraints.keys())
-    if "probs" in args and "logits" in args:
-        try:
-            _ = getattr(distributions[0], "probs")
-            args.remove("logits")
-        except AttributeError:
-            args.remove("probs")
-    concat_args = {
-        arg: pt.cat([getattr(d, arg) for d in distributions], dim=dim)
-        for arg in args
-    }
-    return type(distributions[0])(**concat_args)
 
 
 class GaussianLayer(nn.Module):

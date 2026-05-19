@@ -120,8 +120,6 @@ def generate_m3_dataset(
     train_data = []
     test_data = []
 
-    def normalize_category(c: str):
-        return c.strip()
 
     df["Category"] = df["Category"].apply(normalize_category)
     categories = list(df["Category"].unique())

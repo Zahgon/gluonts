@@ -17,9 +17,6 @@ import torch
 from gluonts.core.component import equals, tensor_to_numpy
 
 
-@equals.register(torch.Tensor)
-def equals_tensor(this: torch.Tensor, that: torch.Tensor) -> bool:
-    return torch.allclose(this, that)
 
 
 @tensor_to_numpy.register(torch.Tensor)

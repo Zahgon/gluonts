@@ -81,35 +81,7 @@ class GPArgProj(gluon.HybridBlock):
         Returns (mu, D, W) where shapes are (..., dim), (..., dim),
         (..., dim, rank)
         """
-
-        # TODO 2 concatenate inputs features to x, better names would be great
-
-        # (..., dim)
-        mu_vector = self.proj[0](x).squeeze(axis=-1)
-
-        mu = mu_vector * self.mu_ratio
-
-        # (..., dim, rank)
-        W_matrix = self.proj[2](x) * self.W_ratio
-
-        # (..., |x| + 1)
-        x_plus_w = F.concat(
-            x, W_matrix.square().sum(axis=-1, keepdims=True), dim=-1
-        )
-
-        # (..., dim)
-        D_vector = self.proj[1](x_plus_w).squeeze(axis=-1)
-
-        d_bias = (
-            0.0 if self.sigma_init == 0.0 else inv_softplus(self.sigma_init**2)
-        )
-
-        D_positive = (
-            F.Activation(D_vector + d_bias, act_type="softrelu")
-            + self.sigma_minimum
-        )
-
-        return mu, D_positive, W_matrix
+        pass
 
 
 class LowrankGPOutput(DistributionOutput):
@@ -148,10 +120,4 @@ class LowrankGPOutput(DistributionOutput):
         else:
             return AffineTransformedDistribution(dist, loc=loc, scale=scale)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return (self.dim,)
 
-    @property
-    def event_dim(self) -> int:
-        return 1

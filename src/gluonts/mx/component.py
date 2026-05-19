@@ -58,35 +58,7 @@ def equals_parameter_dict(
     equals
         Dispatching function.
     """
-    if type(this) != type(that):
-        return False
-
-    def strip_prefix_enumeration(key, prefix):
-        if key.startswith(prefix):
-            name = key[len(prefix) :]
-        else:
-            prefix, args = key.split("_", 1)
-            name = prefix.rstrip("0123456789") + args
-
-        return name
-
-    this_param_names_stripped = [
-        strip_prefix_enumeration(key, this.prefix) for key in this.keys()
-    ]
-    that_param_names_stripped = [
-        strip_prefix_enumeration(key, that.prefix) for key in that.keys()
-    ]
-
-    if not this_param_names_stripped == that_param_names_stripped:
-        return False
-
-    for this_param_name, that_param_name in zip(this.keys(), that.keys()):
-        x = this[this_param_name].data().asnumpy()
-        y = that[that_param_name].data().asnumpy()
-        if not mx.test_utils.almost_equal(x, y, equal_nan=True):
-            return False
-
-    return True
+    pass
 
 
 @equals.register(mx.gluon.HybridBlock)
@@ -125,18 +97,9 @@ def equals_representable_block(
         Specialization of :func:`equals` for Gluon
         :class:`~mxnet.gluon.ParameterDict` input arguments.
     """
-    if not equals_default_impl(this, that):
-        return False
-
-    if not equals_parameter_dict(this.collect_params(), that.collect_params()):
-        return False
-
-    return True
+    pass
 
 
-@skip_encoding.register(mx.gluon.ParameterDict)
-def skip_encoding_mx_gluon_parameterdict(v: mx.gluon.ParameterDict) -> bool:
-    return True
 
 
 @tensor_to_numpy.register(mx.ndarray.NDArray)

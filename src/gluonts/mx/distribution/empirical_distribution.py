@@ -62,32 +62,13 @@ class EmpiricalDistribution(Distribution):
     def F(self):
         return getF(self.samples)
 
-    @property
-    def batch_shape(self) -> Tuple:
-        if self.event_dim == 0:
-            return self.samples.shape[1:]
-        else:
-            return self.samples.shape[1 : -self.event_dim]
 
-    @property
-    def event_shape(self) -> Tuple:
-        if self.event_dim == 0:
-            return ()
-        else:
-            return self.samples.shape[-self.event_dim :]
 
-    @property
-    def event_dim(self) -> int:
-        return self._event_dim
 
     @property
     def mean(self) -> Tensor:
         return self.F.mean(self.samples, axis=0)
 
-    @property
-    def stddev(self) -> Tensor:
-        F = self.F
-        return F.sqrt(F.mean(F.square(self.mean - self.samples), axis=0))
 
     def cdf(self, x: Tensor):
         # Note: computes CDF on each dimension of the target independently.
@@ -264,6 +245,3 @@ class EmpiricalDistributionOutput(DistributionOutput):
     def domain_map(self, F, *args, **kwargs):
         return self.distr_output.domain_map(F, *args, **kwargs)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return self.distr_output.event_shape

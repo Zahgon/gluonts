@@ -141,11 +141,8 @@ class BoxCoxTransform(Bijection):
         r"""
         List: current values of the parameters
         """
-        return [self.lambda_1, self.lambda_2]
+        pass
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     @property
     def sign(self) -> Tensor:
@@ -270,9 +267,6 @@ class BoxCoxTransformOutput(BijectionOutput):
         # we squeeze the output since event_shape is ()
         return lambda_1.squeeze(axis=-1), lambda_2.squeeze(axis=-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
 
 class InverseBoxCoxTransform(InverseBijection):
@@ -292,9 +286,6 @@ class InverseBoxCoxTransform(InverseBijection):
     ) -> None:
         super().__init__(BoxCoxTransform(lambda_1, lambda_2, tol_lambda_1, F))
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
 
 class InverseBoxCoxTransformOutput(BoxCoxTransformOutput):
@@ -304,6 +295,3 @@ class InverseBoxCoxTransformOutput(BoxCoxTransformOutput):
         zip(InverseBoxCoxTransform.arg_names, [1, 1])
     )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

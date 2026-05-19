@@ -33,52 +33,7 @@ def _default_collate(batch):
     r"""
     Puts each data field into a tensor with outer dimension batch size.
     """
-
-    elem = batch[0]
-    elem_type = type(elem)
-    if isinstance(elem, pt.Tensor):
-        out = None
-        if pt.utils.data.get_worker_info() is not None:
-            # If we're in a background process, concatenate directly into a
-            # shared memory tensor to avoid an extra copy
-            numel = sum([x.numel() for x in batch])
-            storage = elem.storage()._new_shared(numel)
-            out = elem.new(storage)
-        return pt.stack(batch, 0, out=out)
-    elif (
-        elem_type.__module__ == "numpy"
-        and elem_type.__name__ != "str_"
-        and elem_type.__name__ != "string_"
-    ):
-        elem = batch[0]
-        if elem_type.__name__ == "ndarray":
-            # array of string classes and object
-            if np_str_obj_array_pattern.search(elem.dtype.str) is not None:
-                raise TypeError(
-                    _default_collate_err_msg_format.format(elem.dtype)
-                )
-            return _default_collate([pt.as_tensor(b) for b in batch])
-        elif elem.shape == ():  # scalars
-            return pt.as_tensor(batch)
-    elif isinstance(elem, float):
-        return pt.tensor(batch, dtype=pt.float)
-    elif isinstance(elem, int_classes):
-        return pt.tensor(batch, dtype=pt.long)
-    elif isinstance(elem, string_classes):
-        return batch
-    elif isinstance(elem, container_abcs.Mapping):
-        return {key: _default_collate([d[key] for d in batch]) for key in elem}
-    elif isinstance(elem, tuple) and hasattr(elem, "_fields"):  # namedtuple
-        return elem_type(
-            *(_default_collate(samples) for samples in zip(*batch))
-        )
-    elif isinstance(elem, container_abcs.Sequence):
-        transposed = zip(*batch)
-        return [_default_collate(samples) for samples in transposed]
-    elif elem is None:
-        return None
-
-    raise TypeError(_default_collate_err_msg_format.format(elem_type))
+    pass
 
 
 def copy_to_gpu(data, cuda_device: int, non_blocking: bool):
@@ -131,19 +86,8 @@ class MetaDataset(NamedTuple):
     def __getattr__(self, key: str):
         return getattr(self.train_set, key)
 
-    @property
-    def train_size(self) -> int:
-        return len(self.train_set)
 
-    @property
-    def valid_size(self) -> Optional[int]:
-        if self.valid_set is None:
-            raise AttributeError("No validation set")
-        return len(self.valid_set)
 
-    @property
-    def test_size(self) -> int:
-        return len(self.test_set)
 
     def _data_loader(
         self,
@@ -184,59 +128,5 @@ class MetaDataset(NamedTuple):
                 data = copy_to_gpu(data, cuda_device, non_blocking=True)
             yield data
 
-    def train_loader(
-        self,
-        batch_size: int,
-        shuffle: bool,
-        cuda_device: int,
-        n_workers: int = 0,
-        n_batches: Optional[int] = None,
-    ) -> Iterator:
-        return self._data_loader(
-            self.train_set,
-            batch_size,
-            shuffle,
-            cuda_device,
-            True,
-            n_workers,
-            n_batches,
-        )
 
-    def valid_loader(
-        self,
-        batch_size: int,
-        cuda_device: int,
-        n_workers: int = 0,
-    ) -> Iterator:
-        if self.valid_set is None:
-            if self.always_validation:
-                dataset = self.test_set
-            else:
-                raise AttributeError("No validation set")
-        else:
-            dataset = self.valid_set
-        return self._data_loader(
-            dataset,
-            batch_size,
-            False,
-            cuda_device,
-            False,
-            n_workers,
-            None,
-        )
 
-    def test_loader(
-        self,
-        batch_size: int,
-        cuda_device: int,
-        n_workers: int = 0,
-    ) -> Iterator:
-        return self._data_loader(
-            self.test_set,
-            batch_size,
-            False,
-            cuda_device,
-            False,
-            n_workers,
-            None,
-        )

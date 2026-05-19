@@ -83,8 +83,6 @@ def generate_m1_dataset(
     train_data = []
     test_data = []
 
-    def normalize_str(c: str):
-        return c.strip().lower()
 
     # select category
     df["Category"] = df["Category"].apply(normalize_str)

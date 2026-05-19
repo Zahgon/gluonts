@@ -481,74 +481,7 @@ class DeepVARNetwork(mx.gluon.HybridBlock):
             Distribution arguments (context + prediction_length,
             number_of_arguments)
         """
-
-        seq_len = self.context_length + self.prediction_length
-
-        # unroll the decoder in "training mode", i.e. by providing future data
-        # as well
-        rnn_outputs, _, scale, lags_scaled, inputs = self.unroll_encoder(
-            F=F,
-            past_time_feat=past_time_feat,
-            past_target_cdf=past_target_cdf,
-            past_observed_values=past_observed_values,
-            past_is_pad=past_is_pad,
-            future_time_feat=future_time_feat,
-            future_target_cdf=future_target_cdf,
-            target_dimension_indicator=target_dimension_indicator,
-        )
-
-        # put together target sequence
-        # (batch_size, seq_len, target_dim)
-        target = F.concat(
-            past_target_cdf.slice_axis(
-                axis=1, begin=-self.context_length, end=None
-            ),
-            future_target_cdf,
-            dim=1,
-        )
-
-        # assert_shape(target, (-1, seq_len, self.target_dim))
-
-        distr, distr_args = self.distr(
-            time_features=inputs,
-            rnn_outputs=rnn_outputs,
-            scale=scale,
-            lags_scaled=lags_scaled,
-            target_dimension_indicator=target_dimension_indicator,
-            seq_len=self.context_length + self.prediction_length,
-        )
-
-        loss = self.loss(F, target=target, distr=distr)
-        assert_shape(loss, (-1, seq_len, 1))
-
-        past_observed_values = F.broadcast_minimum(
-            past_observed_values, 1 - past_is_pad.expand_dims(axis=-1)
-        )
-
-        # (batch_size, subseq_length, target_dim)
-        observed_values = F.concat(
-            past_observed_values.slice_axis(
-                axis=1, begin=-self.context_length, end=None
-            ),
-            future_observed_values,
-            dim=1,
-        )
-
-        # mask the loss at one time step if one or more observations is missing
-        # in the target dimensions (batch_size, subseq_length, 1)
-        loss_weights = observed_values.min(axis=-1, keepdims=True)
-
-        assert_shape(loss_weights, (-1, seq_len, 1))
-
-        weighted_loss = weighted_average(
-            F=F, x=loss, weights=loss_weights, axis=1
-        )
-
-        assert_shape(weighted_loss, (-1, -1, 1))
-
-        self.distribution = distr
-
-        return (weighted_loss, loss) + distr_args
+        pass
 
     def sampling_decoder(
         self,
@@ -716,33 +649,7 @@ class DeepVARNetwork(mx.gluon.HybridBlock):
             prediction_length, target_dim).
 
         """
-
-        # mark padded data as unobserved
-        # (batch_size, target_dim, seq_len)
-        past_observed_values = F.broadcast_minimum(
-            past_observed_values, 1 - past_is_pad.expand_dims(axis=-1)
-        )
-
-        # unroll the decoder in "prediction mode", i.e. with past data only
-        _, state, scale, _, inputs = self.unroll_encoder(
-            F=F,
-            past_time_feat=past_time_feat,
-            past_target_cdf=past_target_cdf,
-            past_observed_values=past_observed_values,
-            past_is_pad=past_is_pad,
-            future_time_feat=None,
-            future_target_cdf=None,
-            target_dimension_indicator=target_dimension_indicator,
-        )
-
-        return self.sampling_decoder(
-            F=F,
-            past_target_cdf=past_target_cdf,
-            target_dimension_indicator=target_dimension_indicator,
-            time_feat=future_time_feat,
-            scale=scale,
-            begin_states=state,
-        )
+        pass
 
     def post_process_samples(self, samples: Tensor) -> Tensor:
         """
@@ -819,17 +726,7 @@ class DeepVARTrainingNetwork(DeepVARNetwork):
             Distribution arguments (context + prediction_length,
             number_of_arguments)
         """
-        return self.train_hybrid_forward(
-            F,
-            target_dimension_indicator,
-            past_time_feat,
-            past_target_cdf,
-            past_observed_values,
-            past_is_pad,
-            future_time_feat,
-            future_target_cdf,
-            future_observed_values,
-        )
+        pass
 
 
 class DeepVARPredictionNetwork(DeepVARNetwork):
@@ -883,12 +780,4 @@ class DeepVARPredictionNetwork(DeepVARNetwork):
             prediction_length, target_dim).
 
         """
-        return self.predict_hybrid_forward(
-            F=F,
-            target_dimension_indicator=target_dimension_indicator,
-            past_time_feat=past_time_feat,
-            past_target_cdf=past_target_cdf,
-            past_observed_values=past_observed_values,
-            past_is_pad=past_is_pad,
-            future_time_feat=future_time_feat,
-        )
+        pass

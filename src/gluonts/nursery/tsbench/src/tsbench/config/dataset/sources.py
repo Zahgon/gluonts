@@ -87,15 +87,7 @@ class GluonTsDatasetConfig(DatasetConfig):  # pylint: disable=abstract-method
                 source=source / "test" / "data.json",
             )
 
-    @property
-    def _gluonts_name(self) -> str:
-        return self.name()
 
-    @property
-    def _prediction_length_multiplier(self) -> int:
-        # This is a legacy field and should NOT be overridden. It was accidentally set for the
-        # preprocessing of some datasets though.
-        return 0
 
     def _filters(self, prediction_length: int) -> List[Filter]:
         return [

@@ -25,11 +25,7 @@ def encode_pd_timestamp(v: pd.Timestamp) -> Any:
     Specializes :func:`encode` for invocations where ``v`` is an instance of
     the :class:`~pandas.Timestamp` class.
     """
-    return {
-        "__kind__": Kind.Instance,
-        "class": "pandas.Timestamp",
-        "args": encode([str(v)]),
-    }
+    pass
 
 
 @encode.register(pd.Period)
@@ -38,19 +34,6 @@ def encode_pd_period(v: pd.Period) -> Any:
     Specializes :func:`encode` for invocations where ``v`` is an instance of
     the :class:`~pandas.Period` class.
     """
-    return {
-        "__kind__": Kind.Instance,
-        "class": "pandas.Period",
-        "args": encode([str(v)]),
-        "kwargs": {"freq": v.freqstr},
-    }
+    pass
 
 
-@encode.register(BaseOffset)
-def encode_pd_baseoffset(v: BaseOffset) -> Any:
-    return {
-        "__kind__": Kind.Instance,
-        "class": "pandas.tseries.frequencies.to_offset",
-        "args": encode([v.freqstr]),
-        "kwargs": {},
-    }

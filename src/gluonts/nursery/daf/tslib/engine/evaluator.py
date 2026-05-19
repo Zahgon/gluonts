@@ -77,13 +77,6 @@ class Evaluator(object):
             raise KeyError("the checkpoint does not have model data.")
         self.model.load_state_dict(module_state)
 
-    @property
-    def test_loader(self) -> Iterator:
-        return self.dataset.test_loader(
-            batch_size=self.batch_size,
-            cuda_device=self.cuda_device,
-            n_workers=self.n_loader_workers,
-        )
 
     def evaluate(self) -> None:
         device = "cpu" if self.cuda_device < 0 else f"cuda:{self.cuda_device}"

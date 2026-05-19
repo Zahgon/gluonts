@@ -29,44 +29,6 @@ from tsbench.surrogate import create_surrogate
 ex = Experiment()
 
 
-@ex.config
-def experiment_config():
-    # pylint: disable=unused-variable
-    experiment = "test"  # type: ignore
-    data_path = str(DEFAULT_DATA_PATH)  # type: ignore
-    evaluations_path = str(DEFAULT_EVALUATIONS_PATH)  # type: ignore
-
-    recommender = "pareto"  # type: ignore
-    num_recommendations = 20  # type: ignore
-    objectives = "ncrps_mean,latency_mean"  # type: ignore
-    focus_objective = None  # type: ignore
-    enforce_single_objective = False  # type: ignore
-
-    surrogate = {  # type: ignore
-        "name": "mlp",
-        "inputs": {
-            "use_simple_dataset_features": False,
-            "use_seasonal_naive_performance": False,
-            "use_catch22_features": False,
-        },
-        "outputs": {
-            "normalization": "quantile",
-            "imputation": False,
-        },
-        "xgboost": {
-            "objective": "regression",
-        },
-        "autogluon": {
-            "time_limit": 10,
-        },
-        "mlp": {
-            "objective": "ranking",
-            "discount": "linear",
-            "hidden_layer_sizes": [32, 32],
-            "weight_decay": 0.01,
-            "dropout": 0.0,
-        },
-    }
 
 
 @ex.automain

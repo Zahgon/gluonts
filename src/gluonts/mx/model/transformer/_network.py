@@ -225,12 +225,6 @@ class TransformerNetwork(mx.gluon.HybridBlock):
 
         return inputs, scale, static_feat
 
-    @staticmethod
-    def upper_triangular_mask(F, d):
-        mask = F.zeros_like(F.eye(d))
-        for k in range(d - 1):
-            mask = mask + F.eye(d, d, k + 1)
-        return mask * LARGE_NEGATIVE_VALUE
 
 
 class TransformerTrainingNetwork(TransformerNetwork):
@@ -265,49 +259,7 @@ class TransformerTrainingNetwork(TransformerNetwork):
         -------
         Loss with shape (batch_size, context + prediction_length, 1)
         """
-
-        # create the inputs for the encoder
-        inputs, scale, _ = self.create_network_input(
-            F=F,
-            feat_static_cat=feat_static_cat,
-            past_time_feat=past_time_feat,
-            past_target=past_target,
-            past_observed_values=past_observed_values,
-            future_time_feat=future_time_feat,
-            future_target=future_target,
-        )
-
-        enc_input = F.slice_axis(
-            inputs, axis=1, begin=0, end=self.context_length
-        )
-        dec_input = F.slice_axis(
-            inputs, axis=1, begin=self.context_length, end=None
-        )
-
-        # pass through encoder
-        enc_out = self.encoder(enc_input)
-
-        # input to decoder
-        dec_output = self.decoder(
-            dec_input,
-            enc_out,
-            self.upper_triangular_mask(F, self.prediction_length),
-        )
-
-        # compute loss
-        distr_args = self.proj_dist_args(dec_output)
-        distr = self.distr_output.distribution(distr_args, scale=scale)
-        loss = distr.loss(future_target)
-
-        # mask loss
-        weighted_loss = weighted_average(
-            F=F,
-            x=loss,
-            weights=future_observed_values,
-            axis=1,
-        )
-
-        return weighted_loss.mean()
+        pass
 
 
 class TransformerPredictionNetwork(TransformerNetwork):
@@ -464,26 +416,4 @@ class TransformerPredictionNetwork(TransformerNetwork):
         Returns predicted samples
         -------
         """
-
-        # create the inputs for the encoder
-        inputs, scale, static_feat = self.create_network_input(
-            F=F,
-            feat_static_cat=feat_static_cat,
-            past_time_feat=past_time_feat,
-            past_target=past_target,
-            past_observed_values=past_observed_values,
-            future_time_feat=None,
-            future_target=None,
-        )
-
-        # pass through encoder
-        enc_out = self.encoder(inputs)
-
-        return self.sampling_decoder(
-            F=F,
-            past_target=past_target,
-            time_feat=future_time_feat,
-            static_feat=static_feat,
-            scale=scale,
-            enc_out=enc_out,
-        )
+        pass

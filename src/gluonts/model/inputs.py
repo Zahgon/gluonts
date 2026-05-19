@@ -31,13 +31,7 @@ class InputSpec(UserDict):
     data: Dict[str, Input]
     zeros_fn: Callable
 
-    @property
-    def shapes(self) -> Dict[str, Tuple[int, ...]]:
-        return valmap(attrgetter("shape"), self)
 
-    @property
-    def dtypes(self) -> Dict[str, Type]:
-        return valmap(attrgetter("dtype"), self)
 
     def zeros(self):
         return {

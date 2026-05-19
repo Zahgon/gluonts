@@ -42,12 +42,7 @@ class DatasetCollection:
     datasets: List[Dataset]
     interleave: bool = False
 
-    def iter_sequential(self):
-        for dataset in self.datasets:
-            yield from dataset
 
-    def iter_interleaved(self):
-        yield from roundrobin(*self.datasets)
 
     def __iter__(self):
         if self.interleave:

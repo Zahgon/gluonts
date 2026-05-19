@@ -92,14 +92,8 @@ def into_arrow_batches(dataset, batch_size=1024, flatten_arrays=True):
         yield pa.record_batch(list(batch.values()), names=list(batch.keys()))
 
 
-@singledispatch
-def _encode_py_to_arrow(val):
-    return val
 
 
-@_encode_py_to_arrow.register
-def _encode_py_pd_period(val: pd.Period):
-    return val.to_timestamp()
 
 
 def write_dataset(

@@ -53,9 +53,6 @@ from .metrics import (
 )
 
 
-def worker_function(evaluator: "Evaluator", inp: tuple):
-    ts, forecast = inp
-    return evaluator.get_metrics_per_ts(ts, forecast)
 
 
 def aggregate_all(
@@ -125,17 +122,7 @@ def validate_forecast(
         True, if the forecast's mean and quantiles have no `NaN` values,
         else False.
     """
-    try:
-        mean_fcst = getattr(forecast, "mean", None)
-    except NotImplementedError:
-        mean_fcst = None
-
-    valid = ~np.isnan(mean_fcst).any() if mean_fcst is not None else True
-    valid &= all(
-        ~np.isnan(forecast.quantile(q.value)).any() for q in quantiles
-    )
-
-    return valid
+    pass
 
 
 class Evaluator:
@@ -320,18 +307,7 @@ class Evaluator:
         np.ndarray
             time series cut in the Forecast object dates
         """
-        assert forecast.index.intersection(time_series.index).equals(
-            forecast.index
-        ), (
-            "Cannot extract prediction target since the index of forecast is"
-            " outside the index of target\nIndex of forecast:"
-            f" {forecast.index}\n Index of target: {time_series.index}"
-        )
-
-        # cut the time series using the dates of the forecast object
-        return np.atleast_1d(
-            np.squeeze(time_series.loc[forecast.index].transpose())
-        )
+        pass
 
     # This method is needed for the owa calculation. It extracts the training
     # sequence from the Series or DataFrame to a numpy array
@@ -351,233 +327,10 @@ class Evaluator:
         np.ndarray
             time series without the forecast dates
         """
+        pass
 
-        assert forecast.index.intersection(time_series.index).equals(
-            forecast.index
-        ), (
-            "Index of forecast is outside the index of target\nIndex of"
-            f" forecast: {forecast.index}\n Index of target:"
-            f" {time_series.index}"
-        )
 
-        # Remove the prediction range
-        # If the prediction range is not in the end of the time series,
-        # everything after the prediction range is truncated
-        date_before_forecast = forecast.index[0] - forecast.freq
-        return np.atleast_1d(
-            np.squeeze(time_series.loc[:date_before_forecast].transpose())
-        )
 
-    def get_base_metrics(
-        self,
-        forecast: Forecast,
-        pred_target,
-        mean_fcst,
-        median_fcst,
-        seasonal_error,
-    ) -> Dict[str, Union[float, str, None]]:
-        return {
-            "item_id": forecast.item_id,
-            "forecast_start": forecast.start_date,
-            "MSE": (
-                mse(pred_target, mean_fcst) if mean_fcst is not None else None
-            ),
-            "abs_error": abs_error(pred_target, median_fcst),
-            "abs_target_sum": abs_target_sum(pred_target),
-            "abs_target_mean": abs_target_mean(pred_target),
-            "seasonal_error": seasonal_error,
-            "MASE": mase(pred_target, median_fcst, seasonal_error),
-            "MAPE": mape(pred_target, median_fcst),
-            "sMAPE": smape(pred_target, median_fcst),
-            "num_masked_target_values": num_masked_values(pred_target),
-        }
-
-    def get_metrics_per_ts(
-        self, time_series: Union[pd.Series, pd.DataFrame], forecast: Forecast
-    ) -> Mapping[str, Union[float, str, None, np.ma.core.MaskedConstant]]:
-        if not validate_forecast(forecast, self.quantiles):
-            if self.allow_nan_forecast:
-                logging.warning(
-                    "Forecast contains NaN values. Metrics may be incorrect."
-                )
-            else:
-                raise ValueError("Forecast contains NaN values.")
-
-        pred_target = np.array(self.extract_pred_target(time_series, forecast))
-        past_data = np.array(self.extract_past_data(time_series, forecast))
-
-        if self.ignore_invalid_values:
-            past_data = np.ma.masked_invalid(past_data)
-            pred_target = np.ma.masked_invalid(pred_target)
-
-        try:
-            mean_fcst = getattr(forecast, "mean", None)
-        except NotImplementedError:
-            mean_fcst = None
-
-        median_fcst = forecast.quantile(0.5)
-        seasonal_error = calculate_seasonal_error(
-            past_data, forecast.start_date.freqstr, self.seasonality
-        )
-
-        metrics: Dict[str, Union[float, str, None]] = self.get_base_metrics(
-            forecast, pred_target, mean_fcst, median_fcst, seasonal_error
-        )
-        metrics["ND"] = cast(float, metrics["abs_error"]) / cast(
-            float, metrics["abs_target_sum"]
-        )
-
-        if self.custom_eval_fn is not None:
-            for k, (eval_fn, _, fcst_type) in self.custom_eval_fn.items():
-                if fcst_type == "mean":
-                    if mean_fcst is not None:
-                        target_fcst = mean_fcst
-                    else:
-                        logging.warning(
-                            "mean_fcst is None, therefore median_fcst is used."
-                        )
-                        target_fcst = median_fcst
-                else:
-                    target_fcst = median_fcst
-
-                try:
-                    val = {
-                        k: eval_fn(
-                            pred_target,
-                            target_fcst,
-                        )
-                    }
-                except Exception:
-                    logging.warning(f"Error occurred when evaluating {k}.")
-                    val = {k: np.nan}
-
-                metrics.update(val)
-
-        try:
-            metrics["MSIS"] = msis(
-                pred_target,
-                forecast.quantile(self.alpha / 2),
-                forecast.quantile(1.0 - self.alpha / 2),
-                seasonal_error,
-                self.alpha,
-            )
-        except Exception:
-            logging.warning("Could not calculate MSIS metric.")
-            metrics["MSIS"] = np.nan
-
-        if self.calculate_owa:
-            from gluonts.ext.naive_2 import naive_2
-
-            naive_median_forecast = naive_2(
-                past_data,
-                len(pred_target),
-                season_length=get_seasonality(forecast.start_date.freqstr),
-            )
-            metrics["sMAPE_naive2"] = smape(pred_target, naive_median_forecast)
-            metrics["MASE_naive2"] = mase(
-                pred_target, naive_median_forecast, seasonal_error
-            )
-
-        for quantile in self.quantiles:
-            forecast_quantile = forecast.quantile(quantile.value)
-
-            metrics[f"QuantileLoss[{quantile}]"] = quantile_loss(
-                pred_target, forecast_quantile, quantile.value
-            )
-            metrics[f"Coverage[{quantile}]"] = coverage(
-                pred_target, forecast_quantile
-            )
-
-        return metrics
-
-    def get_aggregate_metrics(
-        self, metric_per_ts: pd.DataFrame
-    ) -> Tuple[Dict[str, float], pd.DataFrame]:
-        # Define how to aggregate metrics
-        agg_funs = {
-            "MSE": "mean",
-            "abs_error": "sum",
-            "abs_target_sum": "sum",
-            "abs_target_mean": "mean",
-            "seasonal_error": "mean",
-            "MASE": "mean",
-            "MAPE": "mean",
-            "sMAPE": "mean",
-            "MSIS": "mean",
-            "num_masked_target_values": "sum",
-        }
-        if self.calculate_owa:
-            agg_funs["sMAPE_naive2"] = "mean"
-            agg_funs["MASE_naive2"] = "mean"
-
-        for quantile in self.quantiles:
-            agg_funs[f"QuantileLoss[{quantile}]"] = "sum"
-            agg_funs[f"Coverage[{quantile}]"] = "mean"
-
-        if self.custom_eval_fn is not None:
-            for k, (_, agg_type, _) in self.custom_eval_fn.items():
-                agg_funs.update({k: agg_type})
-
-        assert (
-            set(metric_per_ts.columns) >= agg_funs.keys()
-        ), "Some of the requested item metrics are missing."
-
-        # Compute the aggregation
-        totals = self.aggregation_strategy(
-            metric_per_ts=metric_per_ts, agg_funs=agg_funs
-        )
-
-        # Compute derived metrics
-        totals["RMSE"] = np.sqrt(totals["MSE"])
-        totals["NRMSE"] = totals["RMSE"] / totals["abs_target_mean"]
-        totals["ND"] = totals["abs_error"] / totals["abs_target_sum"]
-
-        for quantile in self.quantiles:
-            totals[f"wQuantileLoss[{quantile}]"] = (
-                totals[f"QuantileLoss[{quantile}]"] / totals["abs_target_sum"]
-            )
-
-        totals["mean_absolute_QuantileLoss"] = np.array(
-            [
-                totals[f"QuantileLoss[{quantile}]"]
-                for quantile in self.quantiles
-            ]
-        ).mean()
-
-        totals["mean_wQuantileLoss"] = np.array(
-            [
-                totals[f"wQuantileLoss[{quantile}]"]
-                for quantile in self.quantiles
-            ]
-        ).mean()
-
-        totals["MAE_Coverage"] = np.mean(
-            [
-                np.abs(totals[f"Coverage[{quantile}]"] - np.array([q.value]))
-                for q in self.quantiles
-            ]
-        )
-
-        # Compute OWA if required
-        if self.calculate_owa:
-            if totals["sMAPE_naive2"] == 0 or totals["MASE_naive2"] == 0:
-                logging.warning(
-                    "OWA cannot be computed as Naive2 yields an sMAPE or MASE"
-                    " of 0."
-                )
-                totals["OWA"] = np.nan
-            else:
-                totals["OWA"] = 0.5 * (
-                    totals["sMAPE"] / totals["sMAPE_naive2"]
-                    + totals["MASE"] / totals["MASE_naive2"]
-                )
-            # We get rid of the naive_2 metrics
-            del totals["sMAPE_naive2"]
-            del totals["MASE_naive2"]
-        else:
-            totals["OWA"] = np.nan
-
-        return totals, metric_per_ts
 
 
 class MultivariateEvaluator(Evaluator):
@@ -651,33 +404,9 @@ class MultivariateEvaluator(Evaluator):
         self._eval_dims = eval_dims
         self.target_agg_funcs = target_agg_funcs
 
-    @staticmethod
-    def extract_target_by_dim(
-        it_iterator: Iterator[pd.DataFrame], dim: int
-    ) -> Iterator[pd.DataFrame]:
-        for i in it_iterator:
-            yield (i[dim])
 
-    @staticmethod
-    def extract_forecast_by_dim(
-        forecast_iterator: Iterator[Forecast], dim: int
-    ) -> Iterator[Forecast]:
-        for forecast in forecast_iterator:
-            yield forecast.copy_dim(dim)
 
-    @staticmethod
-    def extract_aggregate_target(
-        it_iterator: Iterator[pd.DataFrame], agg_fun: Callable
-    ) -> Iterator[pd.DataFrame]:
-        for i in it_iterator:
-            yield i.agg(agg_fun, axis=1)
 
-    @staticmethod
-    def extract_aggregate_forecast(
-        forecast_iterator: Iterator[Forecast], agg_fun: Callable
-    ) -> Iterator[Forecast]:
-        for forecast in forecast_iterator:
-            yield forecast.copy_aggregate(agg_fun)
 
     @staticmethod
     def peek(iterator: Iterator[Any]) -> Tuple[Any, Iterator[Any]]:
@@ -685,27 +414,7 @@ class MultivariateEvaluator(Evaluator):
         iterator = chain([peeked_object], iterator)
         return peeked_object, iterator
 
-    @staticmethod
-    def get_target_dimensionality(forecast: Forecast) -> int:
-        target_dim = forecast.dim()
-        assert target_dim > 1, (
-            "the dimensionality of the forecast should be larger than 1, "
-            f"but got {target_dim}. "
-            "Please use the Evaluator to evaluate 1D forecasts."
-        )
-        return target_dim
 
-    def get_eval_dims(self, target_dimensionality: int) -> List[int]:
-        eval_dims = (
-            self._eval_dims
-            if self._eval_dims is not None
-            else list(range(0, target_dimensionality))
-        )
-        assert max(eval_dims) < target_dimensionality, (
-            "eval dims should range from 0 to target_dimensionality - 1, "
-            f"but got max eval_dim {max(eval_dims)}"
-        )
-        return eval_dims
 
     def calculate_aggregate_multivariate_metrics(
         self,
@@ -728,11 +437,7 @@ class MultivariateEvaluator(Evaluator):
         Dict[str, float]
             dictionary with aggregate datasets metrics
         """
-        agg_metrics, _ = super().__call__(
-            self.extract_aggregate_target(ts_iterator, agg_fun),
-            self.extract_aggregate_forecast(forecast_iterator, agg_fun),
-        )
-        return agg_metrics
+        pass
 
     def calculate_aggregate_vector_metrics(
         self,
@@ -755,12 +460,7 @@ class MultivariateEvaluator(Evaluator):
             dictionary with aggregate metrics (of individual (evaluated)
             dimensions and the entire vector)
         """
-        vector_aggregate_metrics, _ = self.get_aggregate_metrics(
-            all_metrics_per_ts
-        )
-        for key, value in vector_aggregate_metrics.items():
-            all_agg_metrics[key] = value
-        return all_agg_metrics
+        pass
 
     def __call__(
         self,

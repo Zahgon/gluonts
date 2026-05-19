@@ -28,12 +28,6 @@ class GatedLinearUnit(HybridBlock):
         self.axis = axis
         self.nonlinear = nonlinear
 
-    def hybrid_forward(self, F, x: Tensor) -> Tensor:
-        val, gate = F.split(x, axis=self.axis, num_outputs=2)
-        if self.nonlinear:
-            val = F.tanh(val)
-        gate = F.sigmoid(gate)
-        return F.broadcast_mul(gate, val)
 
 
 class GatedResidualNetwork(HybridBlock):
@@ -104,25 +98,6 @@ class GatedResidualNetwork(HybridBlock):
             )
             self.lnorm = nn.LayerNorm(axis=-1, in_channels=self.d_output)
 
-    def hybrid_forward(
-        self,
-        F,
-        x: Tensor,
-        c: Optional[Tensor] = None,
-    ) -> Tensor:
-        if self.add_skip:
-            skip = self.skip_proj(x)
-        else:
-            skip = x
-        if self.d_static > 0 and c is None:
-            raise ValueError("static variable is expected.")
-        if self.d_static == 0 and c is not None:
-            raise ValueError("static variable is not accpeted.")
-        if c is not None:
-            x = F.concat(x, c, dim=-1)
-        x = self.mlp(x)
-        x = self.lnorm(F.broadcast_add(x, skip))
-        return x
 
 
 class VariableSelectionNetwork(HybridBlock):
@@ -157,32 +132,6 @@ class VariableSelectionNetwork(HybridBlock):
                 self.register_child(var_net, name=f"var_{n+1}")
                 self.variable_network.append(var_net)
 
-    def hybrid_forward(
-        self,
-        F,
-        variables: List[Tensor],
-        static: Optional[Tensor] = None,
-    ) -> Tuple[Tensor, Tensor]:
-        if len(variables) != self.n_vars:
-            raise ValueError(
-                f"expect {self.n_vars} variables, {len(variables)} given."
-            )
-        if self.add_static and static is None:
-            raise ValueError("static variable is expected.")
-        if not self.add_static and static is not None:
-            raise ValueError("static variable is not accpeted.")
-        flatten = F.concat(*variables, dim=-1)
-        if static is not None:
-            static = F.broadcast_like(static, variables[0])
-        weight = self.weight_network(flatten, static)
-        weight = F.expand_dims(weight, axis=-2)
-        weight = F.softmax(weight, axis=-1)
-        var_encodings = []
-        for var, net in zip(variables, self.variable_network):
-            var_encodings.append(net(var))
-        var_encodings = F.stack(*var_encodings, axis=-1)
-        var_encodings = F.sum(F.broadcast_mul(var_encodings, weight), axis=-1)
-        return var_encodings, weight
 
 
 class SelfAttention(HybridBlock):
@@ -312,11 +261,6 @@ class SelfAttention(HybridBlock):
         v = self.out_proj(v)
         return v
 
-    def hybrid_forward(self, F, x: Tensor, mask: Optional[Tensor]) -> Tensor:
-        q, k, v = self._compute_qkv(F, x)
-        score = self._compute_attn_score(F, q, k, mask)
-        v = self._compute_attn_output(F, score, v)
-        return v
 
 
 class TemporalFusionEncoder(HybridBlock):
@@ -361,32 +305,6 @@ class TemporalFusionEncoder(HybridBlock):
                 self.add_skip = False
             self.lnorm = nn.LayerNorm(axis=-1, in_channels=d_hidden)
 
-    def hybrid_forward(
-        self,
-        F,
-        ctx_input: Tensor,
-        tgt_input: Tensor,
-        states: List[Tensor],
-    ) -> Tensor:
-        ctx_encodings, states = self.encoder_lstm.unroll(
-            length=self.context_length,
-            inputs=ctx_input,
-            begin_state=states,
-            merge_outputs=True,
-        )
-        tgt_encodings, _ = self.decoder_lstm.unroll(
-            length=self.prediction_length,
-            inputs=tgt_input,
-            begin_state=states,
-            merge_outputs=True,
-        )
-        encodings = F.concat(ctx_encodings, tgt_encodings, dim=1)
-        skip = F.concat(ctx_input, tgt_input, dim=1)
-        if self.add_skip:
-            skip = self.skip_proj(skip)
-        encodings = self.gate(encodings)
-        encodings = self.lnorm(F.broadcast_add(skip, encodings))
-        return encodings
 
 
 class TemporalFusionDecoder(HybridBlock):
@@ -462,21 +380,3 @@ class TemporalFusionDecoder(HybridBlock):
             )
             self.ff_lnorm = nn.LayerNorm(axis=-1, in_channels=d_hidden)
 
-    def hybrid_forward(
-        self, F, x: Tensor, static: Tensor, mask: Tensor
-    ) -> Tensor:
-        static = F.tile(
-            static, reps=(1, self.context_length + self.prediction_length, 1)
-        )
-        skip = F.slice_axis(x, axis=1, begin=self.context_length, end=None)
-        x = self.enrich(x, static)
-        mask_pad = F.slice_axis(F.ones_like(mask), axis=1, begin=0, end=1)
-        mask_pad = F.tile(mask_pad, reps=(1, self.prediction_length))
-        mask = F.concat(mask, mask_pad, dim=1)
-        att = self.attention(x, mask)
-        att = self.att_net(att)
-        x = F.slice_axis(x, axis=1, begin=self.context_length, end=None)
-        x = self.att_lnorm(F.broadcast_add(x, att))
-        x = self.ff_net(x)
-        x = self.ff_lnorm(F.broadcast_add(x, skip))
-        return x

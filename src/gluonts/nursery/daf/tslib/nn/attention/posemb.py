@@ -75,9 +75,6 @@ class LearnablePositionalEmbedding(nn.Module):
         for weight in self._weights:
             init.xavier_normal_(weight)
 
-    @property
-    def n_levels(self):
-        return len(self._weights)
 
     def forward(self, pos_seq: LongTensor):
         x = pos_seq.clone()

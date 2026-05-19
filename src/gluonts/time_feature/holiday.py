@@ -36,17 +36,6 @@ MAX_WINDOW = 183 + 17
 
 
 def distance_to_holiday(holiday):
-    def distance_to_day(index):
-        holiday_date = holiday.dates(
-            index - pd.Timedelta(days=MAX_WINDOW),
-            index + pd.Timedelta(days=MAX_WINDOW),
-        )
-        assert (
-            len(holiday_date) != 0
-        ), f"No closest holiday for the date index {index} found."
-        # It sometimes returns two dates if it is exactly half a year after the
-        # holiday. In this case, the smaller distance (182 days) is returned.
-        return (index - holiday_date[0]).days
 
     return distance_to_day
 
@@ -124,15 +113,6 @@ def indicator(distance):
     return float(distance == 0)
 
 
-def exponential_kernel(alpha=1.0, tol=1e-9):
-    def kernel(distance):
-        kernel_value = np.exp(-alpha * np.abs(distance))
-        if kernel_value > tol:
-            return kernel_value
-        else:
-            return 0.0
-
-    return kernel
 
 
 def squared_exponential_kernel(alpha=1.0, tol=1e-9):

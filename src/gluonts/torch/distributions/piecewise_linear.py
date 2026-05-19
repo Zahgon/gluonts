@@ -193,9 +193,6 @@ class PiecewiseLinear(torch.distributions.Distribution):
 
         return sample
 
-    @property
-    def batch_shape(self) -> torch.Size:
-        return self.gamma.shape
 
 
 class PiecewiseLinearOutput(DistributionOutput):
@@ -242,9 +239,6 @@ class PiecewiseLinearOutput(DistributionOutput):
                 distr, [AffineTransform(loc=loc, scale=scale)]
             )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
 
 class TransformedPiecewiseLinear(TransformedDistribution):

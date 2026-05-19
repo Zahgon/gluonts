@@ -46,34 +46,3 @@ class QuantileMetricLoggerCallback(Callback):
         self.split = split
         self.every_n_epochs = every_n_epochs
 
-    def on_validation_epoch_end(
-        self, trainer: Trainer, pl_module: MetaLightningModule
-    ) -> None:
-        if trainer.current_epoch % self.every_n_epochs:
-            return
-        dm_super = trainer.lightning_module.trainer.datamodule
-        dm_val = dm_super.data_modules_val[0]
-        dl = dm_val.val_dataloader()
-        split = dm_val.splits.val()
-        pred = []
-        for batch in dl:
-            batch = batch.to(pl_module.device)
-            pred.append(
-                pl_module.model(
-                    supps=batch.support_set, query=batch.query_past
-                )
-            )
-
-        # redo standardization for evaluation
-        pred = split.data().rescale_dataset(torch.cat(pred, dim=0).cpu())
-        pred = tensor_to_np(pred)
-
-        # use only the length that should be included for evaluation
-        pred = pred[:, : dm_val.prediction_length, ...]
-        m = compute_metrics(
-            pred,
-            split.evaluation(),
-            quantiles=self.quantiles,
-            seasonality=get_seasonality(dm_val.meta.freq),
-        )
-        self.log("metrics", m)

@@ -158,8 +158,6 @@ class RBasePredictor(RepresentablePredictor):
         """
         buf = []
 
-        def save_to_buf(x):
-            buf.append(x)
 
         def dont_save(x):
             pass

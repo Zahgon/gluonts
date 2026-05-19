@@ -53,25 +53,9 @@ class GenPareto(Distribution):
     def F(self):
         return getF(self.xi)
 
-    @property
-    def support_min_max(self) -> Tuple[Tensor, Tensor]:
-        F = self.F
-        return (
-            F.zeros(self.batch_shape),
-            F.ones(self.batch_shape) * MAX_SUPPORT_VAL,
-        )
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.xi.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     def log_prob(self, x: Tensor) -> Tensor:
         F = self.F
@@ -125,33 +109,11 @@ class GenPareto(Distribution):
             np.nan * F.ones_like(self.xi),
         )
 
-    @property
-    def variance(self) -> Tensor:
-        F = self.F
-        xi, beta = self.xi, self.beta
-        return F.where(
-            xi < 1 / 2,
-            F.broadcast_div(
-                beta**2, F.broadcast_mul((1 - xi) ** 2, (1 - 2 * xi))
-            ),
-            np.nan * F.ones_like(xi),
-        )
 
-    @property
-    def stddev(self) -> Tensor:
-        return self.F.sqrt(self.variance)
 
     def sample(
         self, num_samples: Optional[int] = None, dtype=np.float32
     ) -> Tensor:
-        def s(xi: Tensor, beta: Tensor) -> Tensor:
-            F = getF(xi)
-            sample_U = uniform.Uniform(
-                F.zeros_like(xi), F.ones_like(xi)
-            ).sample()
-            boxcox = box_cox_transform.BoxCoxTransform(-xi, F.array([0]))
-            sample_X = -1 * boxcox.f(1 - sample_U) * beta
-            return sample_X
 
         samples = _sample_multiple(
             s,
@@ -163,9 +125,6 @@ class GenPareto(Distribution):
             data=samples, a_min=np.finfo(dtype).eps, a_max=np.finfo(dtype).max
         )
 
-    @property
-    def args(self) -> List:
-        return [self.xi, self.beta]
 
 
 class GenParetoOutput(DistributionOutput):
@@ -196,10 +155,4 @@ class GenParetoOutput(DistributionOutput):
         beta = F.maximum(softplus(F, beta), cls.eps())
         return xi.squeeze(axis=-1), beta.squeeze(axis=-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def value_in_support(self) -> float:
-        return 0.5

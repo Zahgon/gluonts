@@ -209,9 +209,3 @@ def _plot_quantile_forecast(
     sub.legend()
 
 
-def plot_point_forecast(sub, query_past, query_future, pred):
-    query = np.concatenate([query_past, query_future])
-    sub.plot(query, label="gt")
-    sub.axvline(len(query_past) - 1, color="r")  # end of train dataset
-    pred_time = np.arange(len(query_past), len(query_past) + len(pred))
-    sub.plot(pred_time, pred, label="pred")

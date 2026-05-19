@@ -22,10 +22,6 @@ class sentinel:
     pass
 
 
-def map_to_queue(fn, emitter, queue, encode, batch_size):
-    for batch in into_batches(batch_size, map(encode, fn(emitter))):
-        queue.put(batch)
-    queue.put(sentinel)
 
 
 class ParApplyIterator:

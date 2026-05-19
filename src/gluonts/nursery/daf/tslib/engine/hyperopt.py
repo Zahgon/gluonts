@@ -95,36 +95,8 @@ class HyperOptManager(object):
         for index in samples:
             yield self[index]
 
-    def get_log_dir(self, params) -> str:
-        exp_id = f"{self[params]:09d}-{socket.gethostname()}"
-        self.exp_ids[params] = exp_id
-        log_dir = self.work_dir.joinpath(exp_id)
-        log_dir.mkdir(parents=True, exist_ok=True)
-        return log_dir
 
-    def get_optimal_model(self) -> Path:
-        if len(self.records) == 0:
-            raise ValueError("No model has been trained!")
-        selector = np.nanargmin if self.min_mode else np.nanargmax
-        models = list(self.records.keys())
-        values = [r[self.key_factor] for r in self.records.values()]
-        dirname = self.exp_ids[models[selector(values)]]
-        return self.work_dir.joinpath(dirname)
 
-    def dump_records(self):
-        columns = list(self.param_names)
-        index = []
-        data = []
-        for params, record in self.records.items():
-            values = list(params)
-            for name, value in record.items():
-                if name not in columns:
-                    columns.append(name)
-                values.append(value)
-            data.append(values)
-            index.append(self.exp_ids[params])
-        df = pd.DataFrame(data, index=index, columns=columns)
-        df.to_csv(self.work_dir.joinpath("records.csv"))
 
     def load_records(self):
         print(f"Loading records from {self.work_dir}")
@@ -147,17 +119,7 @@ class HyperOptManager(object):
             return
         raise RuntimeError("Cannot load previous checkpoint in random search.")
 
-    def update_record(self, params: Tuple, **record):
-        if self.key_factor not in record:
-            raise ValueError(f"key factor {self.key_factor} is not provided.")
-        self.records[params] = record
-        self.dump_records()
 
-    @staticmethod
-    def print_params(params: Dict):
-        print("Current Hyperparams:")
-        for k, v in params.items():
-            print(f"\t{k:>16}{str(v):>16}")
 
     def run_training(self, params: Dict) -> Dict:
         raise NotImplementedError
@@ -165,51 +127,4 @@ class HyperOptManager(object):
     def run_test(self, exp_dir: Path):
         raise NotImplementedError
 
-    def random_search(self, n_iter: int):
-        for params in self.hyperparameters(n_iter):
-            configs = dict(zip(self.param_names, params))
-            self.print_params(configs)
-            configs.update(self.fixed_params)
-            log_dir = self.get_log_dir(params)
-            if is_main_process():
-                with log_dir.joinpath("configs.json").open("w") as f:
-                    json.dump(configs, f, indent=4)
-            configs["cuda_device"] = self.cuda_device
-            configs["log_dir"] = log_dir
-            try:
-                exp_info = self.run_training(configs)
-            except Exception as e:
-                print(
-                    f"Current config has problem:\n{textwrap.indent(traceback.format_exc(), ' '*4)}skipped."
-                )
-                continue
-            self.update_record(params, **exp_info)
-        if is_main_process():
-            exp_dir = self.get_optimal_model()
-            test_info = self.run_test(exp_dir)
-        else:
-            test_info = None
-        synchronize()
-        return test_info
 
-    def fixed_train(self):
-        exp_id = f"fixed-{socket.gethostname()}"
-        log_dir = self.work_dir.joinpath(exp_id)
-        log_dir.mkdir(parents=True, exist_ok=True)
-        configs = self.dataset.fixed_hyperparams
-        configs.update(self.fixed_params)
-
-        if is_main_process():
-            with log_dir.joinpath("configs.json").open("w") as f:
-                json.dump(configs, f, indent=4)
-        configs["cuda_device"] = self.cuda_device
-        configs["log_dir"] = log_dir
-        try:
-            _ = self.run_training(configs)
-        except Exception as e:
-            print(
-                f"Current config has problem:\n{textwrap.indent(traceback.format_exc(), ' '*4)}skipped."
-            )
-            return
-        test_info = self.run_test(log_dir)
-        return test_info

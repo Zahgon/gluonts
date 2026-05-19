@@ -43,43 +43,5 @@ class HybridRepresentation(Representation):
         for representation in self.representations:
             self.register_child(representation)
 
-    def initialize_from_dataset(
-        self, input_dataset: Dataset, ctx: mx.Context = get_mxnet_context()
-    ):
-        for representation in self.representations:
-            representation.initialize_from_dataset(input_dataset, ctx)
 
-    def initialize_from_array(
-        self, input_array: np.ndarray, ctx: mx.Context = get_mxnet_context()
-    ):
-        for representation in self.representations:
-            representation.initialize_from_array(input_array, ctx)
 
-    def hybrid_forward(
-        self,
-        F,
-        data: Tensor,
-        observed_indicator: Tensor,
-        scale: Optional[Tensor],
-        rep_params: List[Tensor],
-        **kwargs,
-    ) -> Tuple[Tensor, Tensor, List[Tensor]]:
-        representation_list = []
-
-        for representation in self.representations:
-            representation_data, _, _ = representation(
-                data,
-                observed_indicator,
-                scale,
-                rep_params,
-            )
-            representation_list.append(representation_data)
-
-        representation_agg = F.concat(*representation_list, dim=-1)
-
-        if scale is None:
-            scale = F.expand_dims(
-                F.sum(data, axis=-1) / F.sum(observed_indicator, axis=-1), -1
-            )
-
-        return representation_agg, scale, []

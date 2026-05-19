@@ -68,33 +68,6 @@ class DiscreteDistribution(torch.distributions.Distribution):
         :return:
         """
 
-        def _adjust_probs_per_element(values_sorted, probs_sorted):
-            if torch.sum(torch.diff(values_sorted) == 0) == 0:
-                # This batch element does not have duplicates.
-                probs_adjusted = probs_sorted
-            else:
-                _, counts = torch.unique_consecutive(
-                    values_sorted, return_counts=True
-                )
-
-                # list is fine here as it operates on the network inputs
-                # (values) not parameters
-                unique_splits = torch.split(probs_sorted, list(counts))
-                probs_cumsum_per_split = torch.cat(
-                    [torch.cumsum(s, dim=0) for s in unique_splits]
-                )
-
-                # Puts 0 on the positions where the duplicates occur except
-                # for the last position of the duplicate.
-                # To have a 1 at the end, we append a value larger than the
-                # observed values before calling diff.
-                mask_unique_prob = (
-                    torch.diff(values_sorted, append=values_sorted[-1:] + 1.0)
-                    > 0
-                )
-                probs_adjusted = probs_cumsum_per_split * mask_unique_prob
-
-            return probs_adjusted
 
         # Some batch elements have duplicate values, so adjust the
         # corresponding probabilities

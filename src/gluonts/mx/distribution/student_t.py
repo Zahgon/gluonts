@@ -58,27 +58,13 @@ class StudentT(Distribution):
     def F(self):
         return getF(self.mu)
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.mu.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     @property
     def mean(self) -> Tensor:
         return self.F.where(self.nu > 1.0, self.mu, nans_like(self.mu))
 
-    @property
-    def stddev(self) -> Tensor:
-        F = self.F
-        mu, nu, sigma = self.mu, self.nu, self.sigma
-        return F.where(nu > 2.0, sigma * F.sqrt(nu / (nu - 2)), nans_like(mu))
 
     def log_prob(self, x: Tensor) -> Tensor:
         mu, sigma, nu = self.mu, self.sigma, self.nu
@@ -99,15 +85,6 @@ class StudentT(Distribution):
     def sample(
         self, num_samples: Optional[int] = None, dtype=np.float32
     ) -> Tensor:
-        def s(mu: Tensor, sigma: Tensor, nu: Tensor) -> Tensor:
-            F = self.F
-            gammas = F.sample_gamma(
-                alpha=nu / 2.0, beta=2.0 / (nu * F.square(sigma)), dtype=dtype
-            )
-            normal = F.sample_normal(
-                mu=mu, sigma=1.0 / F.sqrt(gammas), dtype=dtype
-            )
-            return normal
 
         return _sample_multiple(
             s,
@@ -117,9 +94,6 @@ class StudentT(Distribution):
             num_samples=num_samples,
         )
 
-    @property
-    def args(self) -> List:
-        return [self.mu, self.sigma, self.nu]
 
 
 class StudentTOutput(DistributionOutput):
@@ -132,6 +106,3 @@ class StudentTOutput(DistributionOutput):
         nu = 2.0 + F.maximum(softplus(F, nu), cls.eps())
         return mu.squeeze(axis=-1), sigma.squeeze(axis=-1), nu.squeeze(axis=-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

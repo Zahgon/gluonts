@@ -57,29 +57,7 @@ class Field(BaseModel):
     default: Any = None
     preprocess: Optional[Callable] = None
 
-    def load_from(self, data, name, **kwargs):
-        try:
-            value = self._get(data, name)
-            return self._load(value, **kwargs)
-        except Exception as err:
-            raise ValueError(f"Error when processing field {name!r}.") from err
 
-    def _get(self, data, name):
-        if self.internal:
-            value = self.default
-        elif self.required:
-            try:
-                value = data[name]
-            except KeyError:
-                # TODO: Add error message
-                raise
-        else:
-            value = data.get(name, self.default)
-
-        if self.preprocess is not None:
-            value = self.preprocess(value)
-
-        return value
 
 
 class Metadata(Field):
@@ -221,91 +199,7 @@ class Schema:
 
         Used by ``load_timeframe`` and ``load_splitframe``.
         """
-        return {
-            name: field.load_from(data, name)
-            for name, field in self.static.items()
-        }
+        pass
 
-    def _load_metadata(self, data: Dict[str, Any]) -> Optional[dict]:
-        if self.metadata:
-            return {
-                name: field.load_from(data, name)
-                for name, field in self.metadata.items()
-            }
 
-        return None
 
-    def load_timeframe(
-        self,
-        data: Dict[str, Any],
-        start: Optional[Union[Period, str]] = None,
-        freq: Optional[Union[Freq, str]] = None,
-    ) -> TimeFrame:
-        if self.time_series_ref is not None:
-            ty = self.columns[self.time_series_ref]
-            ref = ty.load_from(data, self.time_series_ref)
-            length = ref.shape[ty.tdim]
-
-            columns = {self.time_series_ref: ref}
-
-            columns.update(
-                {
-                    name: field.load_from(data, name, length=length)
-                    for name, field in self.columns.items()
-                    if name != self.time_series_ref
-                }
-            )
-
-        else:
-            columns = {}
-
-        return time_frame(
-            columns,
-            static=self._load_static(data),
-            metadata=self._load_metadata(data),
-            start=start,
-            freq=freq,
-        )
-
-    def load_splitframe(
-        self,
-        data: Dict[str, Any],
-        future_length: int,
-        start: Optional[Union[Period, str]] = None,
-        freq: Optional[Union[Freq, str]] = None,
-    ) -> SplitFrame:
-        if self.time_series_ref is not None:
-            ty = self.columns[self.time_series_ref]
-            ref = ty.load_from(data, self.time_series_ref)
-            length = ref.shape[ty.tdim]
-
-            if ty.past_only:
-                past_length = length
-            else:
-                past_length = length - future_length
-
-            past_fields, full_fields = partition(  # type: ignore
-                self.columns.items(), lambda item: item[1].past_only
-            )
-            past = {
-                name: field.load_from(data, name)
-                for name, field in past_fields
-            }
-            full = {
-                name: field.load_from(data, name)
-                for name, field in full_fields
-            }
-        else:
-            past_length = 0
-            full = {}
-            past = {}
-
-        return split_frame(
-            full,
-            past=past,
-            static=self._load_static(data),
-            past_length=past_length,
-            future_length=future_length,
-            start=start,
-            freq=freq,
-        )

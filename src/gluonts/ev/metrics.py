@@ -411,11 +411,6 @@ class ND(BaseMetricDefinition):
 
     forecast_type: str = "0.5"
 
-    @staticmethod
-    def normalized_deviation(
-        sum_absolute_error: np.ndarray, sum_absolute_label: np.ndarray
-    ) -> np.ndarray:
-        return sum_absolute_error / sum_absolute_label
 
     def __call__(self, axis: Optional[int] = None) -> DerivedMetric:
         return DerivedMetric(
@@ -441,9 +436,6 @@ class RMSE(BaseMetricDefinition):
 
     forecast_type: str = "mean"
 
-    @staticmethod
-    def root_mean_squared_error(mean_squared_error: np.ndarray) -> np.ndarray:
-        return np.sqrt(mean_squared_error)
 
     def __call__(self, axis: Optional[int] = None) -> DerivedMetric:
         return DerivedMetric(
@@ -468,11 +460,6 @@ class NRMSE(BaseMetricDefinition):
 
     forecast_type: str = "mean"
 
-    @staticmethod
-    def normalize_root_mean_squared_error(
-        root_mean_squared_error: np.ndarray, mean_absolute_label: np.ndarray
-    ) -> np.ndarray:
-        return root_mean_squared_error / mean_absolute_label
 
     def __call__(self, axis: Optional[int] = None) -> DerivedMetric:
         return DerivedMetric(
@@ -494,11 +481,6 @@ nrmse = NRMSE()
 class WeightedSumQuantileLoss(BaseMetricDefinition):
     q: float
 
-    @staticmethod
-    def weight_sum_quantile_loss(
-        sum_quantile_loss: np.ndarray, sum_absolute_label: np.ndarray
-    ) -> np.ndarray:
-        return sum_quantile_loss / sum_absolute_label
 
     def __call__(self, axis: Optional[int] = None) -> DerivedMetric:
         return DerivedMetric(
@@ -617,14 +599,6 @@ class OWA(BaseMetricDefinition):
 
     forecast_type: str = "0.5"
 
-    @staticmethod
-    def calculate_OWA(
-        smape: np.ndarray,
-        smape_naive2: np.ndarray,
-        mase: np.ndarray,
-        mase_naive2: np.ndarray,
-    ) -> np.ndarray:
-        return 0.5 * (smape / smape_naive2 + mase / mase_naive2)
 
     def __call__(self, axis: Optional[int] = None) -> DerivedMetric:
         return DerivedMetric(

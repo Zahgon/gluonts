@@ -59,35 +59,12 @@ def encode_json(arg):
     raise ValueError(f"Can't encode {arg!r}")
 
 
-@encode_json.register(dict)
-def _encode_json_dict(arg: dict):
-    return valmap(encode_json, arg)
 
 
-@encode_json.register(list)
-def _encode_json_list(arg: list):
-    return list(map(encode_json, arg))
 
 
-@encode_json.register(np.ndarray)
-def _encode_json_array(arg: np.ndarray):
-    if np.issubdtype(arg.dtype, int):
-        return arg.tolist()
-
-    if np.issubdtype(arg.dtype, np.floating):
-        b = np.array(arg, dtype=object)
-        b[np.isnan(arg)] = "Nan"
-        b[np.isposinf(arg)] = "Infinity"
-        b[np.isneginf(arg)] = "-Infinity"
-
-        return b.tolist()
-
-    return _encode_json_list(arg.tolist())
 
 
-@encode_json.register(pd.Period)
-def _encode_json_period(arg: pd.Period):
-    return str(arg)
 
 
 @dataclass(frozen=True)
@@ -119,11 +96,6 @@ class JsonLinesFile:
         if not self.line_starts:
             self.line_starts.extend(self._line_starts())
 
-    def open(self):
-        if self.path.suffix == ".gz":
-            return gzip.open(self.path)
-
-        return open(self.path, "rb", buffering=1024**2)
 
     def __iter__(self):
         with self.open() as jsonl_file:
@@ -150,21 +122,7 @@ class JsonLinesFile:
         This information can be used with ``file.seek`` to directly jump to a
         specific line in the file.
         """
-        line_lengths = [0]
-
-        with self.open() as file_obj:
-            line_lengths.extend(map(len, file_obj))
-
-        # let's try to save some memory
-        if line_lengths[-1] <= 2**16:
-            dtype = np.int16
-        elif line_lengths[-1] <= 2**32:
-            dtype = np.int32
-        else:
-            # this should only happen for very large files `> 4 GB`
-            dtype = np.int64
-
-        return np.cumsum(line_lengths[:-1], dtype=dtype)
+        pass
 
     def __getitem__(self, idx):
         if isinstance(idx, slice):

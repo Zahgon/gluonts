@@ -29,20 +29,6 @@ class MXContext:
     the :class:`~mxnet.context.Context` data type.
     """
 
-    @classmethod
-    def validate(cls, v: Union[str, mx.Context]) -> mx.Context:
-        if isinstance(v, mx.Context):
-            return v
-
-        m = re.search(r"^(?P<dev_type>cpu|gpu)(\((?P<dev_id>\d+)\))?$", v)
-
-        if m:
-            return mx.Context(m["dev_type"], int(m["dev_id"] or 0))
-        else:
-            raise ValueError(
-                f"bad MXNet context {v}, expected either an "
-                "mx.context.Context or its string representation"
-            )
 
     @classmethod
     def __get_validators__(cls) -> mx.Context:

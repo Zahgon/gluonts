@@ -216,9 +216,6 @@ class ImplicitQuantileNetworkOutput(DistributionOutput):
             outputs = outputs + loc
         return self.distr_cls(outputs=outputs, taus=taus)
 
-    @property
-    def event_shape(self):
-        return ()
 
     def loss(
         self,

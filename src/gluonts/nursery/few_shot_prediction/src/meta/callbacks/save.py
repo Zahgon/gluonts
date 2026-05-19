@@ -33,15 +33,3 @@ class InitialSaveCallback(Callback):  # type: ignore
         super().__init__()
         self.args_to_save = args_to_save
 
-    def on_pretrain_routine_start(
-        self, trainer: Trainer, pl_module: LightningModule
-    ) -> None:
-        base_dir = get_save_dir_from_csvlogger(trainer.logger)
-        # save the dictionary
-        with open(base_dir / "args.json", "w") as fp:
-            json.dump(self.args_to_save, fp)
-
-        # save model
-        save_dir = base_dir / "initial_model"
-        save_dir.mkdir(parents=True, exist_ok=True)
-        pl_module.model.save(path=save_dir)

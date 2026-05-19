@@ -56,70 +56,21 @@ from gluonts.core import serde
 from ._freq import Freq
 
 
-def _is_number(value):
-    return isinstance(value, (int, np.integer))
 
 
 class _BasePeriod:
     data: Any
     freq: Freq
 
-    @property
-    def freqstr(self) -> str:
-        return str(self.freq)
 
-    @property
-    def year(self) -> np.ndarray:
-        return self.data.astype("M8[Y]").astype(int) + 1970
 
-    @property
-    def month(self) -> np.ndarray:
-        return self.data.astype("M8[M]").astype(int) % 12 + 1
 
-    @property
-    def day(self) -> np.ndarray:
-        return (self.data.astype("M8[D]") - self.data.astype("M8[M]")).astype(
-            int
-        ) + 1
 
-    @property
-    def hour(self) -> np.ndarray:
-        return (self.data.astype("M8[h]") - self.data.astype("M8[D]")).astype(
-            int
-        )
 
-    @property
-    def minute(self) -> np.ndarray:
-        return (self.data.astype("M8[m]") - self.data.astype("M8[h]")).astype(
-            int
-        )
 
-    @property
-    def second(self) -> np.ndarray:
-        return (self.data.astype("M8[s]") - self.data.astype("M8[m]")).astype(
-            int
-        )
 
-    @property
-    def dayofweek(self) -> np.ndarray:
-        return (self.data.astype("M8[D]").astype(int) - 4) % 7
 
-    @property
-    def dayofyear(self) -> np.ndarray:
-        return (self.data.astype("M8[D]") - self.data.astype("M8[Y]")).astype(
-            int
-        ) + 1
 
-    @property
-    def week(self) -> np.ndarray:
-        # Note: In Python 3.9 `isocalendar()` returns a named tuple, but we
-        # need to support 3.7 and 3.8, so we use index one for the week.
-        return np.array(
-            [
-                cal.isocalendar()[1]
-                for cal in self.data.astype(datetime.datetime)
-            ]
-        )
 
     def __add__(self, other):
         if _is_number(other):
@@ -165,8 +116,6 @@ class Period(_BasePeriod):
     def to_timestamp(self):
         return self.data.astype(object)
 
-    def unix_epoch(self) -> int:
-        return self.to_numpy().astype("M8[s]").astype(int)
 
     def __repr__(self) -> str:
         return f"Period<{self.data}, {self.freq}>"
@@ -203,8 +152,7 @@ class Periods(_BasePeriod):
         >>> p = periods("2021", "D", 365)
         >>> assert p.end == period("2021-12-31", "D")
         """
-
-        return self[-1]
+        pass
 
     def head(self, count: int) -> Periods:
         """
@@ -223,8 +171,7 @@ class Periods(_BasePeriod):
         >>> p = periods("2021", "D", 365)
         >>> assert p.tail(5) == periods("2021-12-27", "D", 5)
         """
-
-        return self[-count:]
+        pass
 
     def future(self, count: int) -> Periods:
         """
@@ -297,9 +244,6 @@ class Periods(_BasePeriod):
 
         return Periods(np_index, freq)
 
-    def intersection(self, other):
-        # TODO: Is this needed?
-        return self.data[np.in1d(self, other)]
 
     def index_of(self, period: Union[str, Period]):
         """
@@ -350,19 +294,8 @@ class Periods(_BasePeriod):
     def __array__(self) -> np.ndarray:
         return self.data
 
-    def unix_epoch(self) -> np.ndarray:
-        return self.to_numpy().astype("M8[s]").astype(int)
 
 
-@serde.encode.register
-def _encode_zebras_periods(v: Periods):
-    return {
-        "__kind__": "instance",
-        "class": "gluonts.zebras.periods",
-        "kwargs": serde.encode(
-            {"start": v.start, "freq": str(v.freq), "count": len(v)}
-        ),
-    }
 
 
 def period(

@@ -42,12 +42,7 @@ def register_ensemble_recommender(name: str) -> Callable[[R], R]:
     Registers the provided class with the given name in the global ensemble
     recommender registry.
     """
-
-    def register(cls: R) -> R:
-        RECOMMENDER_REGISTRY[name] = cls
-        return cls
-
-    return register
+    pass
 
 
 def create_recommender(name: str, **kwargs: Any) -> Recommender[ModelConfig]:

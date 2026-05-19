@@ -327,26 +327,3 @@ class DeepVAREstimator(PyTorchEstimator):
             output_transform=self.output_transform,
         )
 
-    def create_net(
-        self,
-        device: torch.device,
-    ) -> Predictor:
-        prediction_network = DeepVARPredictionNetwork(
-            input_size=self.input_size,
-            target_dim=self.target_dim,
-            num_parallel_samples=self.num_parallel_samples,
-            num_layers=self.num_layers,
-            num_cells=self.num_cells,
-            cell_type=self.cell_type,
-            history_length=self.history_length,
-            context_length=self.context_length,
-            prediction_length=self.prediction_length,
-            distr_output=self.distr_output,
-            dropout_rate=self.dropout_rate,
-            cardinality=self.cardinality,
-            embedding_dimension=self.embedding_dimension,
-            lags_seq=self.lags_seq,
-            scaling=self.scaling,
-        ).to(device)
-
-        return prediction_network

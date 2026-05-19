@@ -66,11 +66,6 @@ class NanMixture(MixtureDistribution):
     def distribution(self):
         return self.components[0]
 
-    @property
-    def nan_prob(self):
-        return self.mixture_probs.slice_axis(axis=-1, begin=1, end=2).squeeze(
-            axis=-1
-        )
 
     def log_prob(self, x: Tensor) -> Tensor:
         F = self.F
@@ -123,10 +118,6 @@ class NanMixtureArgs(gluon.HybridBlock):
 
             self.register_child(self.component_projection)
 
-    def hybrid_forward(self, F, x: Tensor) -> Tuple[Tensor, ...]:
-        nan_prob = self.proj_nan_prob(x)
-        component_args = self.component_projection(x)
-        return tuple([nan_prob.squeeze(axis=-1), component_args])
 
 
 class NanMixtureOutput(DistributionOutput):
@@ -156,6 +147,3 @@ class NanMixtureOutput(DistributionOutput):
             ),
         )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return self.distr_output.event_shape

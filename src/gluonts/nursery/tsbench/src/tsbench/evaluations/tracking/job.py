@@ -115,7 +115,7 @@ class Job:
         """
         Returns job metrics for which there exists only a single value.
         """
-        return self.performance["meta"]
+        pass
 
     @property
     def metrics(self) -> list[dict[str, dict[str, float | int]]]:
@@ -135,23 +135,7 @@ class Job:
 
         The variances of all metrics will be set to 0.
         """
-        return [
-            Performance(
-                training_time=Metric(p["training"]["duration"], 0),
-                latency=Metric(self.static_metrics["latency"], 0),
-                num_model_parameters=Metric(
-                    self.static_metrics["num_model_parameters"], 0
-                ),
-                num_gradient_updates=Metric(
-                    p["training"]["num_gradient_updates"], 0
-                ),
-                **{
-                    k: Metric(p["testing"][k], 0)
-                    for k in ["mase", "smape", "nrmse", "nd", "ncrps"]
-                },
-            )
-            for p in self.metrics
-        ]
+        pass
 
     def get_forecast(self, index: int) -> QuantileForecasts:
         """

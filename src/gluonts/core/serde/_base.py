@@ -241,13 +241,6 @@ def encode(v: Any) -> Any:
     raise RuntimeError(bad_type_msg.format(fqname_for(v.__class__)))
 
 
-@encode.register(Stateful)
-def encode_from_state(v: Stateful) -> Any:
-    return {
-        "__kind__": Kind.Stateful,
-        "class": fqname_for(v.__class__),
-        "kwargs": encode(v.__dict__),
-    }
 
 
 @encode.register(PurePath)
@@ -256,11 +249,7 @@ def encode_path(v: PurePath) -> Any:
     Specializes :func:`encode` for invocations where ``v`` is an instance of
     the :class:`~PurePath` class.
     """
-    return {
-        "__kind__": Kind.Instance,
-        "class": fqname_for(v.__class__),
-        "args": [str(v)],
-    }
+    pass
 
 
 @encode.register(BaseModel)
@@ -269,22 +258,9 @@ def encode_pydantic_model(v: BaseModel) -> Any:
     Specializes :func:`encode` for invocations where ``v`` is an instance of
     the :class:`~BaseModel` class.
     """
-    return {
-        "__kind__": Kind.Instance,
-        "class": fqname_for(v.__class__),
-        "kwargs": encode(v.__dict__),
-    }
+    pass
 
 
-@encode.register(partial)
-def encode_partial(v: partial) -> Any:
-    args = (v.func,) + v.args
-    return {
-        "__kind__": Kind.Instance,
-        "class": fqname_for(v.__class__),
-        "args": encode(args),
-        "kwargs": encode(v.keywords),
-    }
 
 
 decode_disallow = [

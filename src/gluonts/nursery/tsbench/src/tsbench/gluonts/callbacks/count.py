@@ -28,7 +28,3 @@ class ParameterCountCallback(Callback):  # type: ignore
     def __init__(self) -> None:
         self.num_parameters = 0
 
-    def on_network_initialization_end(self, network: nn.HybridBlock) -> None:
-        self.num_parameters = sum(
-            np.prod(p.shape) for p in network.collect_params().values()
-        )

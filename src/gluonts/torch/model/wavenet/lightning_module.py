@@ -53,80 +53,16 @@ class WaveNetLightningModule(pl.LightningModule):
         """
         Execute training step.
         """
-        feat_static_cat = batch["feat_static_cat"]
-        feat_static_real = batch["feat_static_real"]
-        past_target = batch["past_target"]
-        past_observed_values = batch["past_observed_values"]
-        past_time_feat = batch["past_time_feat"]
-        future_target = batch["future_target"]
-        future_observed_values = batch["future_observed_values"]
-        future_time_feat = batch["future_time_feat"]
-        scale = batch["scale"]
-
-        train_loss = self.model.loss(
-            feat_static_cat=feat_static_cat,
-            feat_static_real=feat_static_real,
-            past_target=past_target,
-            past_observed_values=past_observed_values,
-            past_time_feat=past_time_feat,
-            future_target=future_target,
-            future_observed_values=future_observed_values,
-            future_time_feat=future_time_feat,
-            scale=scale,
-        ).mean()
-
-        self.log(
-            "train_loss",
-            train_loss,
-            on_epoch=True,
-            on_step=False,
-            prog_bar=True,
-        )
-
-        return train_loss
+        pass
 
     def validation_step(self, batch, batch_idx: int):  # type: ignore
         """
         Execute validation step.
         """
-        feat_static_cat = batch["feat_static_cat"]
-        feat_static_real = batch["feat_static_real"]
-        past_target = batch["past_target"]
-        past_observed_values = batch["past_observed_values"]
-        past_time_feat = batch["past_time_feat"]
-        future_target = batch["future_target"]
-        future_observed_values = batch["future_observed_values"]
-        future_time_feat = batch["future_time_feat"]
-        scale = batch["scale"]
-
-        val_loss = self.model.loss(
-            feat_static_cat=feat_static_cat,
-            feat_static_real=feat_static_real,
-            past_target=past_target,
-            past_observed_values=past_observed_values,
-            past_time_feat=past_time_feat,
-            future_target=future_target,
-            future_observed_values=future_observed_values,
-            future_time_feat=future_time_feat,
-            scale=scale,
-        ).mean()
-
-        self.log(
-            "val_loss",
-            val_loss,
-            on_epoch=True,
-            on_step=False,
-            prog_bar=True,
-        )
-
-        return val_loss
+        pass
 
     def configure_optimizers(self):
         """
         Returns the optimizer to use.
         """
-        return torch.optim.AdamW(
-            self.model.parameters(),
-            lr=self.lr,
-            weight_decay=self.weight_decay,
-        )
+        pass

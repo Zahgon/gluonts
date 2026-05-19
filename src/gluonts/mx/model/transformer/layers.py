@@ -37,13 +37,7 @@ def split_heads(F, x: Tensor, dim_per_head: int, heads: int) -> Tensor:
     -------
     Tensor of shape (batch_size * heads, time_length, dim_per_head).
     """
-
-    # (batch_size, time_length, heads, dim_per_head)
-    x = F.reshape(data=x, shape=(0, -1, heads, dim_per_head))
-    # (batch_size, heads, time_length, dim/heads)
-    x = F.transpose(data=x, axes=(0, 2, 1, 3))
-    # (batch_size * heads, time_length, dim/heads)
-    return F.reshape(data=x, shape=(-3, -1, dim_per_head))
+    pass
 
 
 def dot_attention(
@@ -73,18 +67,7 @@ def dot_attention(
     -------
     'Context' vectors for each query of shape (n, lq, dv)
     """
-
-    # (n, lq, lk)
-    logits = F.batch_dot(lhs=queries, rhs=keys, transpose_b=True)
-
-    if mask is not None:
-        logits = F.broadcast_add(logits, mask)
-
-    probs = F.softmax(logits, axis=-1)
-    probs = F.Dropout(probs, p=dropout) if dropout > 0.0 else probs
-
-    # (n, lq, lk) x (n, lk, dv) -> (n, lq, dv)
-    return F.batch_dot(lhs=probs, rhs=values)
+    pass
 
 
 def combine_heads(F, x: Tensor, dim_per_head: int, heads: int) -> Tensor:
@@ -103,13 +86,7 @@ def combine_heads(F, x: Tensor, dim_per_head: int, heads: int) -> Tensor:
     -------
     Tensor of shape (batch_size, time_length, dim)
     """
-
-    # (batch_size, heads, time_length, dim_per_head)
-    x = F.reshape(data=x, shape=(-4, -1, heads, 0, dim_per_head))
-    # (batch_size, time_length, heads, dim_per_head)
-    x = F.transpose(x, axes=(0, 2, 1, 3))
-    # (batch_size, time_length, dim)
-    return F.reshape(x, shape=(-1, 0, dim_per_head * heads))
+    pass
 
 
 class LayerNormalization(HybridBlock):
@@ -154,8 +131,7 @@ class LayerNormalization(HybridBlock):
         -------
         Normalized inputs of shape: (d0, ..., dn, num_hidden)
         """
-
-        return self.lnorm(data)
+        pass
 
 
 class InputLayer(HybridBlock):
@@ -172,8 +148,6 @@ class InputLayer(HybridBlock):
         with self.name_scope():
             self.net = mx.gluon.nn.Dense(units=self.model_size, flatten=False)
 
-    def hybrid_forward(self, F, data: Tensor, *args):
-        return self.net(data)
 
 
 class MultiHeadAttentionBase(HybridBlock):
@@ -244,27 +218,7 @@ class MultiHeadAttentionBase(HybridBlock):
         -------
         Context vectors of shape (batch_size, query_max_length, att_dim_out)
         """
-
-        # scale by 1/sqrt(dim_per_head)
-        queries = queries * (self.dim_per_head**-0.5)
-
-        # (batch_size * heads, length, dim/heads)
-        queries = split_heads(F, queries, self.dim_per_head, self.heads)
-        keys = split_heads(F, keys, self.dim_per_head, self.heads)
-        values = split_heads(F, values, self.dim_per_head, self.heads)
-
-        # (batch_size * heads, query_max_length, dim_per_head)
-        contexts = dot_attention(
-            F, queries, keys, values, mask=mask, dropout=self.dropout
-        )
-
-        # (batch_size, query_max_length, input_dim)
-        contexts = combine_heads(F, contexts, self.dim_per_head, self.heads)
-
-        # contexts: (batch_size, query_max_length, output_dim)
-        contexts = self.dense_att(contexts)
-
-        return contexts
+        pass
 
 
 class MultiHeadSelfAttention(MultiHeadAttentionBase):
@@ -326,30 +280,7 @@ class MultiHeadSelfAttention(MultiHeadAttentionBase):
         Tensor
             A tensor of shape (batch_size, max_length, att_dim_out)
         """
-
-        # Q = K = V -> Q * W_q, K * W_k, V * W_v
-
-        # combined: (batch_size, max_length, att_dim_in * 3)
-        combined = self.dense_pre_satt(inputs)
-
-        # split into queries, keys and values
-        # (batch_size, max_length, att_dim_in)
-        queries, keys, values = F.split(data=combined, num_outputs=3, axis=2)
-
-        if cache is not None:
-            # append new keys and values to cache, update the cache
-            keys = cache["k"] = (
-                keys
-                if "k" not in cache.keys()
-                else F.concat(cache["k"], keys, dim=1)
-            )
-            values = cache["v"] = (
-                values
-                if "v" not in cache.keys()
-                else F.concat(cache["v"], values, dim=1)
-            )
-
-        return self._attend(F, queries, keys, values, mask), cache
+        pass
 
 
 class MultiHeadAttention(MultiHeadAttentionBase):
@@ -412,20 +343,7 @@ class MultiHeadAttention(MultiHeadAttentionBase):
         -------
         Tensor of shape (batch_size, query_seq_len, att_dim_out)
         """
-
-        # Q -> Q * W_q
-        # K = V -> K * W_k, V * W_v
-
-        # (batch, query_max_length, att_dim_in)
-        queries = self.dense_pre_att_q(queries)
-
-        # (batch, memory_max_length, att_dim_in)
-        keys = self.dense_pre_att_k(memory)
-
-        # (batch, memory_max_length, att_dim_in)
-        values = self.dense_pre_att_v(memory)
-
-        return self._attend(F, queries, keys, values, mask=mask)
+        pass
 
 
 class TransformerFeedForward(HybridBlock):
@@ -484,8 +402,7 @@ class TransformerFeedForward(HybridBlock):
         -------
         Tensor of shape (batch_size, d1, out_dim)
         """
-
-        return self.mlp(x)
+        pass
 
 
 class TransformerProcessBlock(HybridBlock):
@@ -525,26 +442,4 @@ class TransformerProcessBlock(HybridBlock):
         -------
         Processed data of shape (batch_size, length, num_hidden).
         """
-        if not self.sequence:
-            return data
-
-        if prev is None:
-            assert (
-                "r" not in self.sequence
-            ), "Residual connection not allowed if no previous value given."
-
-        for step in self.sequence:
-            if step == "r":
-                data = F.broadcast_add(data, prev)
-
-            elif step == "n":
-                assert self.layer_norm is not None
-                data = self.layer_norm(data)
-
-            elif step == "d":
-                if self.dropout > 0.0:
-                    data = F.Dropout(data, p=self.dropout)
-            else:
-                raise ValueError("Unknown step in sequence: %s" % step)
-
-        return data
+        pass

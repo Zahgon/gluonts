@@ -132,7 +132,3 @@ class SelectFields(MapTransformation):
         self.input_fields = input_fields
         self.allow_missing = allow_missing
 
-    def map_transform(self, data: DataEntry, is_train: bool) -> DataEntry:
-        if self.allow_missing:
-            return {f: data[f] for f in self.input_fields if f in data}
-        return {f: data[f] for f in self.input_fields}

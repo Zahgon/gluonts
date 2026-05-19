@@ -71,31 +71,12 @@ class SeriesBatch:
             ),
         )
 
-    def pin_memory(self):
-        self.sequences = self.sequences.pin_memory()
-        self.lengths = self.lengths.pin_memory()
-        self.split_sections = self.split_sections.pin_memory()
-        if self.scales is not None:
-            self.scales = self.scales.pin_memory()
-        return self
 
     def unpad(self, to_numpy: bool = False, squeeze: bool = False):
         """
         Unpad sequences in batch by using the lengths.
         """
-        t = tensor_to_np if to_numpy else lambda x: x
-        sq = torch.squeeze if squeeze else lambda x: x
-
-        splits = torch.split(self.sequences, self.split_sections.tolist())
-        lengths = torch.split(self.lengths, self.split_sections.tolist())
-        out = []
-        for l_split, split in zip(lengths, splits):
-            un_padded = [t(sq(s[:l])) for l, s in zip(l_split, split)]
-            if squeeze:
-                out.extend(un_padded)
-            else:
-                out.append(un_padded)
-        return out
+        pass
 
     def to(self, device) -> SeriesBatch:
         return SeriesBatch(
@@ -112,13 +93,7 @@ class SeriesBatch:
         The series must contain the same time series in the same order as the
         dataset.
         """
-        m = self.scales[:, 0].unsqueeze(1)
-        std = self.scales[:, 1].unsqueeze(1)
-        return SeriesBatch(
-            self.sequences * std + m,
-            self.lengths,
-            self.split_sections,
-        )
+        pass
 
     def one_per_split(self) -> SeriesBatch:
         """
@@ -196,11 +171,6 @@ class TripletBatch:
             self.query_future.to(device),
         )
 
-    def pin_memory(self):
-        self.support_set = self.support_set.pin_memory()
-        self.query_past = self.query_past.pin_memory()
-        self.query_future = self.query_future.pin_memory()
-        return self
 
     def reduce_to_unique_query(self) -> TripletBatch:
         """

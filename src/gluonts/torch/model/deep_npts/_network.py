@@ -38,10 +38,6 @@ INPUT_SCALING_MAP = {
 }
 
 
-def init_weights(module: nn.Module, scale: float = 1.0):
-    if type(module) == nn.Linear:
-        nn.init.uniform_(module.weight, -scale, scale)
-        nn.init.zeros_(module.bias)
 
 
 class FeatureEmbedder(nn.Module):

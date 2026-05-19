@@ -49,25 +49,7 @@ class ServerFacade:
     def url(self, path) -> str:
         return self.base_address + path
 
-    def ping(self) -> bool:
-        try:
-            response = requests.get(url=self.url("/ping"))
-            return response.status_code == 200
-        except requests.exceptions.ConnectionError:
-            return False
 
-    def execution_parameters(self) -> dict:
-        response = requests.get(
-            url=self.url("/execution-parameters"),
-            headers={"Accept": "application/json"},
-        )
-
-        if response.status_code == 200:
-            return response.json()
-        elif response.status_code >= 400:
-            raise RuntimeError(response.content.decode("utf-8"))
-        else:
-            raise RuntimeError(f"Unexpected {response.status_code} response")
 
     def invocations(
         self, data_entries: Iterable[DataEntry], configuration: dict
@@ -88,31 +70,13 @@ class ServerFacade:
         else:
             raise RuntimeError(f"Unexpected {response.status_code} response")
 
-    def batch_invocations(
-        self, data_entries: Iterable[DataEntry]
-    ) -> List[dict]:
-        instances_pre = map(encode_json, data_entries)
-        instances = list(map(json.dumps, instances_pre))
-
-        response = requests.post(
-            url=self.url("/invocations"), data="\n".join(instances)
-        )
-
-        if response.status_code != 200:
-            raise RuntimeError(response.content.decode("utf-8"))
-
-        predictions = list(map(json.loads, response.text.splitlines()))
-        assert len(predictions) == len(instances)
-        return predictions
 
 
 def free_port() -> int:
     """
     Returns a random unbound port.
     """
-    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
-        sock.bind(("", 0))
-        return sock.getsockname()[1]
+    pass
 
 
 @dataclass
@@ -157,35 +121,7 @@ def temporary_server(
         A context manager that yields the `InferenceServer` instance
         wrapping the spawned inference server.
     """
-    context = multiprocessing.get_context("spawn")
-    context = typing.cast(ForkContext, context)  # cast to make mypi pass
-
-    server = Server(env, forecaster_type, settings)
-    process = context.Process(target=server.run)
-    process.start()
-
-    endpoint = ServerFacade(
-        base_address="http://{address}:{port}".format(
-            address=settings.sagemaker_server_address,
-            port=settings.sagemaker_server_port,
-        )
-    )
-
-    # try to ping the server (signalling liveness)
-    # poll for n seconds in t second intervals
-    n, t = 10, 2
-    max_time = time.time() + n
-    while not endpoint.ping():
-        if time.time() < max_time:
-            time.sleep(t)
-        else:
-            msg = f"Failed to start the inference server within {n} seconds"
-            raise TimeoutError(msg)
-
-    yield endpoint
-
-    process.terminate()
-    process.join()
+    pass
 
 
 @contextmanager
@@ -212,29 +148,7 @@ def temporary_train_env(
     ContextManager[gluonts.shell.env.TrainEnv]
         A context manager that yields the `TrainEnv` instance.
     """
-
-    with tempfile.TemporaryDirectory(prefix="gluonts-train-env") as base:
-        paths = TrainPaths(base=Path(base))
-
-        # write hyperparameters
-        with paths.hyperparameters.open(mode="w") as fp:
-            hps_encoded = encode_sagemaker_parameters(hyperparameters)
-            json.dump(hps_encoded, fp, indent=2, sort_keys=True)
-
-        # save dataset
-        ds_path = materialize_dataset(dataset_name)
-
-        path_metadata = paths.data / "metadata" / "metadata.json"
-        path_train = paths.data / "train"
-        path_test = paths.data / "test"
-
-        path_metadata.parent.mkdir(exist_ok=True)
-
-        path_metadata.symlink_to(ds_path / "metadata.json")
-        path_train.symlink_to(ds_path / "train", target_is_directory=True)
-        path_test.symlink_to(ds_path / "test", target_is_directory=True)
-
-        yield TrainEnv(path=paths.base)
+    pass
 
 
 @contextmanager
@@ -253,11 +167,4 @@ def temporary_serve_env(predictor: Predictor) -> ContextManager[ServeEnv]:
     ContextManager[gluonts.shell.env.ServeEnv]
         A context manager that yields the `ServeEnv` instance.
     """
-
-    with tempfile.TemporaryDirectory(prefix="gluonts-serve-env") as base:
-        paths = ServePaths(base=Path(base))
-
-        # serialize model
-        predictor.serialize(paths.model)
-
-        yield ServeEnv(path=paths.base)
+    pass

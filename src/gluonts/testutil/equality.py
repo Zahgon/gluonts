@@ -59,9 +59,7 @@ def assert_recursively_close(
     equal_nan
         Indicates whether or not numpy.nan values should be considered equal.
     """
-    _assert_recursively_close(
-        obj_a, obj_b, location="", rtol=rtol, atol=atol, equal_nan=equal_nan
-    )
+    pass
 
 
 def _assert_recursively_close(obj_a, obj_b, location, *args, **kwargs):

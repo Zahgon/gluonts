@@ -203,22 +203,7 @@ def _worker_loop(
     Loads the predictor serialized in predictor_path reads inputs from
     input_queue and writes forecasts to output_queue
     """
-
-    predictor = Predictor.deserialize(predictor_path)
-    while True:
-        idx, data_chunk = input_queue.get()
-        if idx is None:
-            output_queue.put((None, None, None))
-            break
-        try:
-            result = list(predictor.predict(data_chunk, **kwargs))
-        except Exception:
-            we = WorkerError(
-                "".join(traceback.format_exception(*sys.exc_info()))
-            )
-            output_queue.put((we, None, None))
-            break
-        output_queue.put((idx, worker_id, result))
+    pass
 
 
 class ParallelizedPredictor(Predictor):

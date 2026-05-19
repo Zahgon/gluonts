@@ -57,14 +57,6 @@ def copy_parameters(
     net_dest.load_state_dict(net_source.state_dict(), strict=strict)
 
 
-def get_forward_input_names(module: Type[torch.nn.Module]):
-    params = inspect.signature(module.forward).parameters
-    param_names = [k for k, v in params.items() if not str(v).startswith("*")]
-    assert param_names[0] == "self", (
-        "Expected first argument of forward to be `self`, "
-        f"but found `{param_names[0]}`"
-    )
-    return param_names[1:]  # skip: self
 
 
 def weighted_average(

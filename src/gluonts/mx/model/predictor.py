@@ -232,12 +232,6 @@ class SymbolBlockPredictor(GluonPredictor):
 
     BlockType = mx.gluon.SymbolBlock
 
-    def as_symbol_block_predictor(
-        self,
-        batch: Optional[DataBatch] = None,
-        dataset: Optional[Dataset] = None,
-    ) -> "SymbolBlockPredictor":
-        return self
 
     def serialize_prediction_net(self, path: Path) -> None:
         export_symb_block(self.prediction_net, path, "prediction_net")
@@ -318,39 +312,6 @@ class RepresentableBlockPredictor(GluonPredictor):
             dtype=dtype,
         )
 
-    def as_symbol_block_predictor(
-        self,
-        batch: Optional[DataBatch] = None,
-        dataset: Optional[Dataset] = None,
-    ) -> SymbolBlockPredictor:
-        if batch is None:
-            assert dataset is not None
-            data_loader = InferenceDataLoader(
-                dataset,
-                transform=self.input_transform,
-                batch_size=self.batch_size,
-                stack_fn=partial(batchify, ctx=self.ctx, dtype=self.dtype),
-            )
-            batch = next(iter(data_loader))
-
-        with self.ctx:
-            symbol_block_net = hybrid_block_to_symbol_block(
-                hb=self.prediction_net,
-                data_batch=[batch[k] for k in self.input_names],
-            )
-
-        return SymbolBlockPredictor(
-            input_names=self.input_names,
-            prediction_net=symbol_block_net,
-            batch_size=self.batch_size,
-            prediction_length=self.prediction_length,
-            ctx=self.ctx,
-            input_transform=self.input_transform,
-            lead_time=self.lead_time,
-            forecast_generator=self.forecast_generator,
-            output_transform=self.output_transform,
-            dtype=self.dtype,
-        )
 
     def serialize(self, path: Path) -> None:
         logging.warning(

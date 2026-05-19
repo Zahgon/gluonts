@@ -36,20 +36,8 @@ import pandas as pd
 import torch as pt
 
 
-def _dict_equal(dict1: Dict, dict2: Dict, cmp_func: Callable = eq) -> bool:
-    if dict1.keys() == dict2.keys():
-        return all(cmp_func(dict1[k], dict2[k]) for k in dict1.keys())
-    return False
 
 
-def _pad_array_along_axis(
-    array: ndarray, pad: Tuple[int, int], axis: int = 0, constant_values=np.nan
-) -> ndarray:
-    full_pad = [(0, 0)] * array.ndim
-    full_pad[axis] = pad
-    return np.pad(
-        array, full_pad, mode="constant", constant_values=constant_values
-    )
 
 
 class TimeSeriesInstant(object):
@@ -72,40 +60,9 @@ class TimeSeriesInstant(object):
         self._categorical_features = set()
         self._numerical_features = set()
 
-    def add_features(self, name: str, data: ndarray, data_type: str) -> None:
-        valid_data_type = ["cat", "num", "categorical", "numerical"]
-        data_type = data_type.lower()
-        if data_type not in valid_data_type:
-            raise ValueError(f"data_type should be one of {valid_data_type}")
-        numerical = data_type in ["num", "numerical"]
 
-        valid_ndim = 1 if numerical else 0
-        if data.ndim != valid_ndim:
-            raise ValueError(
-                f"{feature_type} and {data_type} type feature requires {valid_ndim}-d data"
-            )
 
-        self._features[name] = data
-        if numerical:
-            self._numerical_features.add(name)
-        else:
-            self._categorical_features.add(name)
 
-    @property
-    def categorical_features(self) -> Dict:
-        return {
-            name: self._features[name] for name in self._categorical_features
-        }
-
-    @property
-    def numerical_features(self) -> Dict:
-        return {
-            name: self._features[name] for name in self._numerical_features
-        }
-
-    @property
-    def d_data(self) -> int:
-        return self.target.shape[1]
 
     def __eq__(self, other) -> bool:
         return all(
@@ -191,104 +148,15 @@ class TimeSeries(Sequence[TimeSeriesInstant]):
         self._categorical_features = set()
         self._numerical_features = set()
 
-    def add_features(
-        self, name: str, data: ndarray, data_type: str, feature_type: str
-    ) -> None:
-        valid_data_type = ["cat", "num", "categorical", "numerical"]
-        valid_feature_type = ["static", "revealed", "observed"]
-        data_type = data_type.lower()
-        feature_type = feature_type.lower()
-        if data_type not in valid_data_type:
-            raise ValueError(f"data_type should be one of {valid_data_type}")
-        if feature_type not in valid_feature_type:
-            raise ValueError(
-                f"feature_type should be one of {valid_feature_type}"
-            )
 
-        numerical = data_type in ["num", "numerical"]
-        static = feature_type == "static"
-        revealed = feature_type == "revealed"
 
-        valid_ndim = 1 if numerical else 0
-        if not static:
-            valid_ndim += 1
-        if data.ndim != valid_ndim:
-            raise ValueError(
-                f"{feature_type} and {data_type} type feature requires {valid_ndim}-d data"
-            )
 
-        self._features[name] = data
-        if static:
-            self._static_features.add(name)
-        elif revealed:
-            self._revealed_features.add(name)
-        else:
-            self._observed_features.add(name)
 
-        if numerical:
-            self._numerical_features.add(name)
-        else:
-            self._categorical_features.add(name)
 
-    @property
-    def static_categorical_features(self) -> Dict:
-        return {
-            name: self._features[name]
-            for name in self._static_features & self._categorical_features
-        }
 
-    @property
-    def static_numerical_features(self) -> Dict:
-        return {
-            name: self._features[name]
-            for name in self._static_features & self._numerical_features
-        }
 
-    @property
-    def revealed_categorical_features(self) -> Dict:
-        return {
-            name: self._features[name]
-            for name in self._revealed_features & self._categorical_features
-        }
 
-    @property
-    def revealed_numerical_features(self) -> Dict:
-        return {
-            name: self._features[name]
-            for name in self._revealed_features & self._numerical_features
-        }
 
-    @property
-    def observed_categorical_features(self) -> Dict:
-        return {
-            name: self._features[name]
-            for name in self._observed_features & self._categorical_features
-        }
-
-    @property
-    def observed_numerical_features(self) -> Dict:
-        return {
-            name: self._features[name]
-            for name in self._observed_features & self._numerical_features
-        }
-
-    @property
-    def _dynamic_features(self) -> set:
-        return self._observed_features | self._revealed_features
-
-    @property
-    def dynamic_categorical_features(self) -> Dict:
-        return {
-            name: self._features[name]
-            for name in self._dynamic_features & self._categorical_features
-        }
-
-    @property
-    def dynamic_numerical_features(self) -> Dict:
-        return {
-            name: self._features[name]
-            for name in self._dynamic_features & self._numerical_features
-        }
 
     def __eq__(self, other):
         return all(
@@ -478,48 +346,9 @@ class TimeSeries(Sequence[TimeSeriesInstant]):
                 )
             return obj
 
-    @property
-    def d_data(self) -> int:
-        return self.target.shape[1]
 
-    @classmethod
-    def from_pandas_series(
-        cls, series: pd.Series, target_name: Optional[str] = None
-    ):
-        return cls(
-            series.values,
-            time_index=series.index,
-            series_name=series.name,
-            target_names=target_name,
-        )
 
-    def to_pandas_dataframe(self) -> pd.DataFrame:
-        df = pd.DataFrame(
-            self.target, columns=self.target_names, index=self.time_index
-        )
-        for name in self._static_features:
-            data = self._features[name]
-            if data.ndim == 0 or (data.ndim == 1 and data.shape[0] == 1):
-                df[name] = np.tile(data, len(self))
-            else:
-                for i in range(data.shape[0]):
-                    df[f"{name}_{i}"] = np.tile(data[i], len(self))
-        for name in self._revealed_features | self._observed_features:
-            data = self._features[name]
-            if data.ndim == 1:
-                df[name] = data
-            elif data.ndim == 2 and data.shape[1] == 1:
-                df[name] = data[:, 0]
-            else:
-                for i in range(data.shape[0]):
-                    df[f"{name}_{i}"] = data[:, i]
-        return df
 
-    def to_pandas_series(self) -> pd.Series:
-        df = self.to_pandas_dataframe()
-        series = df[df.columns[0]]
-        series.name = "1D-data"
-        return series
 
     def __repr__(self) -> str:
         string = f"Time series {self.series_name} of size {len(self)}x{self.d_data}\n"
@@ -624,15 +453,6 @@ class TimeSeriesCorpus(Sequence[TimeSeries]):
                 value = value | {"id"}
         return value
 
-    @property
-    def cardinalities(self) -> Dict:
-        cardi = {
-            name: len(enc.classes_)
-            for name, enc in self.categorical_encoders.items()
-        }
-        if self.add_series_id:
-            cardi["id"] = len(self)
-        return cardi
 
     def split_by_timestamp(
         self,

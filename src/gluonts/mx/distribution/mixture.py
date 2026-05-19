@@ -94,16 +94,6 @@ class MixtureDistribution(Distribution):
     def F(self):
         return getF(self.mixture_probs)
 
-    @property
-    def support_min_max(self) -> Tuple[Tensor, Tensor]:
-        F = self.F
-        lb = F.ones(self.batch_shape) * MAX_SUPPORT_VAL
-        ub = F.ones(self.batch_shape) * -MAX_SUPPORT_VAL
-        for c in self.components:
-            c_lb, c_ub = c.support_min_max
-            lb = F.broadcast_minimum(lb, c_lb)
-            ub = F.broadcast_maximum(ub, c_ub)
-        return lb, ub
 
     def __getitem__(self, item):
         mp = _index_tensor(self.mixture_probs, item)
@@ -116,17 +106,8 @@ class MixtureDistribution(Distribution):
             [c[item] for c in self.components],
         )
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.components[0].batch_shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return self.components[0].event_shape
 
-    @property
-    def event_dim(self) -> int:
-        return self.components[0].event_dim
 
     def log_prob(self, x: Tensor) -> Tensor:
         F = self.F
@@ -170,25 +151,6 @@ class MixtureDistribution(Distribution):
         )
         return erg
 
-    @property
-    def stddev(self) -> Tensor:
-        F = self.F
-        sq_mean_values = F.square(
-            F.stack(*[c.mean for c in self.components], axis=-1)
-        )
-        sq_std_values = F.square(
-            F.stack(*[c.stddev for c in self.components], axis=-1)
-        )
-
-        return F.sqrt(
-            F.sum(
-                F.broadcast_mul(
-                    sq_mean_values + sq_std_values, self.mixture_probs, axis=-1
-                ),
-                axis=-1,
-            )
-            - F.square(self.mean)
-        )
 
     def sample(
         self, num_samples: Optional[int] = None, dtype=np.float32
@@ -234,10 +196,6 @@ class MixtureArgs(gluon.HybridBlock):
                 )
                 self.register_child(self.component_projections[-1])
 
-    def hybrid_forward(self, F, x: Tensor) -> Tuple[Tensor, ...]:
-        mixture_probs = self.proj_mixture_probs(x)
-        component_args = [c_proj(x) for c_proj in self.component_projections]
-        return tuple([mixture_probs] + component_args)
 
 
 class MixtureDistributionOutput(DistributionOutput):
@@ -267,10 +225,4 @@ class MixtureDistributionOutput(DistributionOutput):
             ],
         )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return self.distr_outputs[0].event_shape
 
-    @property
-    def value_in_support(self) -> float:
-        return self.distr_outputs[0].value_in_support

@@ -54,7 +54,3 @@ from .pipeline import Pipeline
 from .util import lift, Map
 
 
-def imap_unordered(fn, data, num_workers, batch_size=1):
-    return ParApply(
-        lift(fn), partition(data, num_workers), batch_size=batch_size
-    )

@@ -55,31 +55,6 @@ class ForecastPlotLoggerCallback(Callback):
         self.split = split
         self.every_n_epochs = every_n_epochs
 
-    def on_validation_epoch_end(
-        self, trainer: Trainer, pl_module: MetaLightningModule
-    ) -> None:
-        if trainer.current_epoch % self.every_n_epochs:
-            return
-        # Bring the tensors to CPU
-        log_batch = self.log_batch.to(device=pl_module.device)
-        query_past = log_batch.query_past
-        query_future = log_batch.query_future
-        support_set = log_batch.support_set
-
-        # Get model prediction
-        pred = pl_module.model(supps=support_set, query=query_past)
-        pred = SeriesBatch(
-            pred, query_future.lengths, query_future.split_sections
-        ).unpad(to_numpy=True, squeeze=True)
-        qp = query_past.unpad(to_numpy=True, squeeze=True)
-        qf = query_future.unpad(to_numpy=True, squeeze=True)
-        fig = plot_quantile_forecast(qp, qf, pred, quantiles=self.quantiles)
-        fig.savefig(
-            get_save_dir_from_csvlogger(trainer.logger)
-            / f"pred_{self.split + '_' if self.split else ''}ep{trainer.current_epoch}.png",
-            bbox_inches="tight",
-        )
-        plt.close(fig)
 
 
 class ForecastSupportSetAttentionPlotLoggerCallback(Callback):
@@ -113,52 +88,6 @@ class ForecastSupportSetAttentionPlotLoggerCallback(Callback):
         self.split = split
         self.every_n_epochs = every_n_epochs
 
-    def on_validation_epoch_end(
-        self, trainer: Trainer, pl_module: MetaLightningModule
-    ) -> None:
-        if trainer.current_epoch % self.every_n_epochs:
-            return
-        # Bring the tensors to CPU
-        log_batch = self.log_batch.to(device=pl_module.device)
-        query_past = log_batch.query_past
-        query_future = log_batch.query_future
-        support_set = log_batch.support_set
-
-        # Get model prediction
-        pred, attention = pl_module.model(
-            supps=support_set,
-            query=query_past,
-            return_attention=True,
-        )
-        pred = SeriesBatch(
-            pred, query_future.lengths, query_future.split_sections
-        ).unpad(to_numpy=True, squeeze=True)
-        qp = query_past.unpad(to_numpy=True, squeeze=True)
-        qf = query_future.unpad(to_numpy=True, squeeze=True)
-        supps = support_set.unpad(to_numpy=True, squeeze=False)
-        n_supps = support_set.split_sections[0]
-        attention = attention.reshape(n_supps * attention.size()[0], 1, -1)
-        attention = SeriesBatch(
-            attention.transpose(1, 2),
-            support_set.lengths,
-            support_set.split_sections,
-        ).unpad(to_numpy=True, squeeze=False)
-        # attention = [[tensor_to_np(att) for att in supps] for supps in attention]
-
-        fig = plot_forecast_supportset_attention(
-            qp,
-            qf,
-            pred,
-            supps=supps,
-            attention=attention,
-            quantiles=self.quantiles,
-        )
-        fig.savefig(
-            get_save_dir_from_csvlogger(trainer.logger)
-            / f"pred_supps_{self.split + '_' if self.split else ''}ep{trainer.current_epoch}.png",
-            bbox_inches="tight",
-        )
-        plt.close(fig)
 
 
 class LossPlotLoggerCallback(Callback):
@@ -176,63 +105,8 @@ class LossPlotLoggerCallback(Callback):
         super().__init__()
         self.every_n_epochs = every_n_epochs
 
-    def on_validation_epoch_end(
-        self, trainer: Trainer, pl_module: MetaLightningModule
-    ) -> None:
-        if (trainer.current_epoch < 1) or (
-            trainer.current_epoch % self.every_n_epochs
-        ):
-            return
-        self.plot_loss(trainer=trainer, pl_module=pl_module)
 
-    def on_fit_end(
-        self, trainer: Trainer, pl_module: MetaLightningModule
-    ) -> None:
-        if trainer.current_epoch < 1:
-            return
-        self.plot_loss(trainer=trainer, pl_module=pl_module)
 
-    def plot_loss(
-        self, trainer: Trainer, pl_module: MetaLightningModule
-    ) -> None:
-        train_loss, train_steps = get_loss_steps("train_loss", trainer)
-        val_loss_macro, val_steps = get_loss_steps("val_loss_macro", trainer)
-
-        fig, ax = plt.subplots()
-        ax.semilogy(train_steps, train_loss, label="train_loss", alpha=0.5)
-        ax.semilogy(
-            val_steps, val_loss_macro, label="val_loss_macro", alpha=0.5
-        )
-        ax2 = ax.twinx()
-        ax2.set_ylabel("crps scores", color="red")
-        if pl_module.val_crps_scaled_macro:
-            val_crps_scaled_macro, _ = get_loss_steps(
-                "val_crps_scaled_macro", trainer
-            )
-            ax2.semilogy(
-                val_steps,
-                val_crps_scaled_macro,
-                "r--",
-                label="val_crps_scaled_macro",
-            )
-        else:
-            val_crps_macro, _ = get_loss_steps("val_crps_macro", trainer)
-            ax2.semilogy(
-                val_steps, val_crps_macro, "r--", label="val_crps_macro"
-            )
-        ax2.legend(loc="upper right")
-
-        ticks = range(0, trainer.current_epoch + 1, self.every_n_epochs)
-        labels = [str(t) for t in ticks]
-        ax.set_xticks(ticks)
-        ax.set_xticklabels(labels, rotation=45)
-        ax.legend(loc="upper left")
-
-        fig.savefig(
-            get_save_dir_from_csvlogger(trainer.logger) / f"loss.png",
-            bbox_inches="tight",
-        )
-        plt.close(fig)
 
 
 class CheatLossPlotLoggerCallback(LossPlotLoggerCallback):
@@ -251,28 +125,6 @@ class CheatLossPlotLoggerCallback(LossPlotLoggerCallback):
         super().__init__(**kwargs)
         self.dataset_names_val = dataset_names_val
 
-    def plot_loss(
-        self, trainer: Trainer, pl_module: MetaLightningModule
-    ) -> None:
-        train_loss, train_steps = get_loss_steps("train_loss", trainer)
-
-        fig, ax = plt.subplots()
-        ax.semilogy(train_steps, train_loss, label="train_loss", alpha=0.5)
-        for d_name in self.dataset_names_val:
-            val_loss, val_steps = get_loss_steps(f"{d_name}_val_loss", trainer)
-            ax.semilogy(val_steps, val_loss, label=f"{d_name}_val_loss")
-
-        ticks = range(0, trainer.current_epoch + 1, self.every_n_epochs)
-        labels = [str(t) for t in ticks]
-        ax.set_xticks(ticks)
-        ax.set_xticklabels(labels, rotation=45)
-        ax.legend(loc="upper left")
-
-        fig.savefig(
-            get_save_dir_from_csvlogger(trainer.logger) / f"loss.png",
-            bbox_inches="tight",
-        )
-        plt.close(fig)
 
 
 class MacroCRPSPlotCallback(Callback):
@@ -294,62 +146,5 @@ class MacroCRPSPlotCallback(Callback):
         self.every_n_epochs = every_n_epochs
         # We only compute this on the data as it is (no rescaling)
 
-    def on_validation_epoch_end(
-        self, trainer: Trainer, pl_module: MetaLightningModule
-    ) -> None:
-        if trainer.current_epoch % self.every_n_epochs:
-            return
-        self.plot_crps(trainer, scaled=False)
-        dm_super = trainer.lightning_module.trainer.datamodule
-        if dm_super.standardize:
-            self.plot_crps(trainer, scaled=True)
 
-    def on_fit_end(
-        self, trainer: Trainer, pl_module: MetaLightningModule
-    ) -> None:
-        if trainer.current_epoch < 1:
-            return
-        self.plot_crps(trainer, scaled=False)
-        dm_super = trainer.lightning_module.trainer.datamodule
-        if dm_super.standardize:
-            self.plot_crps(trainer, scaled=True)
 
-    def plot_crps(self, trainer: Trainer, scaled: bool) -> None:
-        cm = plt.get_cmap("tab20")
-        suffix = "_scaled" if scaled else ""
-        dm_super = trainer.lightning_module.trainer.datamodule
-
-        fig, ax = plt.subplots()
-        for i, dm_val in enumerate(dm_super.data_modules_val):
-            c, steps = get_loss_steps(
-                f"{dm_val.dataset_name}_val_crps{suffix}", trainer
-            )
-            ax.semilogy(
-                steps,
-                c,
-                label=dm_val.dataset_name,
-                alpha=1.0,
-                color=cm.colors[i],
-            )
-
-        macro, steps = get_loss_steps(f"val_crps{suffix}_macro", trainer)
-        ax.semilogy(steps, macro, "r--", label=f"val_crps{suffix}_macro")
-        ticks = range(0, trainer.current_epoch + 1, self.every_n_epochs)
-        labels = [str(t) for t in ticks]
-        ax.set_xticks(ticks)
-        ax.set_xticklabels(labels, rotation=45)
-        ax.legend(
-            ncol=2,
-            loc="upper center",
-            handletextpad=1.5,
-            bbox_to_anchor=(0.5, 1.3),
-            framealpha=0.5,
-            prop={"size": 8},
-        )
-
-        fig.savefig(
-            get_save_dir_from_csvlogger(trainer.logger)
-            / f"val_crps{suffix}_macro.png",
-            bbox_inches="tight",
-        )
-        plt.close(fig)

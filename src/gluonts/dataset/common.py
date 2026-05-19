@@ -201,27 +201,6 @@ def FileDataset(
         return DatasetCollection(list(map(file_dataset, loaders)))
 
 
-def _FileDataset(
-    dataset: Dataset,
-    freq: str,
-    one_dim_target: bool = True,
-    cache: bool = False,
-    use_timestamp: bool = False,
-    translate: Optional[dict] = None,
-) -> Dataset:
-    process = ProcessDataEntry(
-        freq, one_dim_target=one_dim_target, use_timestamp=use_timestamp
-    )
-
-    if translate is not None:
-        dataset = cast(Dataset, Map(Translator.parse(translate), dataset))
-
-    dataset = cast(Dataset, Map(process, dataset))
-
-    if cache:
-        dataset = cast(Dataset, Cached(dataset))
-
-    return dataset
 
 
 def ListDataset(
@@ -258,9 +237,6 @@ def ListDataset(
     )
 
 
-@functools.lru_cache(10_000)
-def _as_period(val, freq):
-    return pd.Period(val, freq)
 
 
 # TODO: find out whether this is a duplicate

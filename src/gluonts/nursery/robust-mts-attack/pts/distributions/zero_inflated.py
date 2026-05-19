@@ -54,9 +54,6 @@ class ZeroInflatedDistribution(Distribution):
 
         super().__init__(batch_shape, event_shape, validate_args)
 
-    @property
-    def support(self):
-        return self.base_dist.support
 
     def log_prob(self, value):
         if self._validate_args:
@@ -81,11 +78,6 @@ class ZeroInflatedDistribution(Distribution):
     def mean(self):
         return (1 - self.gate) * self.base_dist.mean
 
-    @lazy_property
-    def variance(self):
-        return (1 - self.gate) * (
-            self.base_dist.mean**2 + self.base_dist.variance
-        ) - (self.mean) ** 2
 
     def expand(self, batch_shape, _instance=None):
         new = self._get_checked_instance(type(self), _instance)
@@ -119,9 +111,6 @@ class ZeroInflatedPoisson(ZeroInflatedDistribution):
 
         super().__init__(gate, base_dist, validate_args=validate_args)
 
-    @property
-    def rate(self):
-        return self.base_dist.rate
 
 
 class ZeroInflatedNegativeBinomial(ZeroInflatedDistribution):
@@ -156,14 +145,5 @@ class ZeroInflatedNegativeBinomial(ZeroInflatedDistribution):
 
         super().__init__(gate, base_dist, validate_args=validate_args)
 
-    @property
-    def total_count(self):
-        return self.base_dist.total_count
 
-    @property
-    def probs(self):
-        return self.base_dist.probs
 
-    @property
-    def logits(self):
-        return self.base_dist.logits

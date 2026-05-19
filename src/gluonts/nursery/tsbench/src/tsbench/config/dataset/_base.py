@@ -67,7 +67,7 @@ class DatasetConfig:
         """
         Returns whether the dataset has time features.
         """
-        return True
+        pass
 
     @property
     def max_training_time(self) -> int:
@@ -81,7 +81,7 @@ class DatasetConfig:
         """
         Returns the dataset's metadata.
         """
-        return MetaData.parse_file(self.root / "gluonts" / "metadata.json")
+        pass
 
     @property
     def data(self) -> DatasetSplits:

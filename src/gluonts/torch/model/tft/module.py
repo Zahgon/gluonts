@@ -268,17 +268,6 @@ class TemporalFusionTransformerModel(nn.Module):
             torch.zeros,
         )
 
-    def input_types(self) -> Dict[str, torch.dtype]:
-        return {
-            "past_target": torch.float,
-            "past_observed_values": torch.float,
-            "feat_static_real": torch.float,
-            "feat_static_cat": torch.long,
-            "feat_dynamic_real": torch.float,
-            "feat_dynamic_cat": torch.long,
-            "past_feat_dynamic_real": torch.float,
-            "past_feat_dynamic_cat": torch.long,
-        }
 
     def _preprocess(
         self,

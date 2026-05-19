@@ -67,21 +67,6 @@ class SelfAttentionBlock(HybridBlock):
                 prefix="ffn_",
             )
 
-    def hybrid_forward(
-        self,
-        F,
-        x: Tensor,
-        mask: Tensor,
-    ) -> Tensor:
-        skip = x
-        if self.pre_ln:
-            x = self.lnorm(x)
-        x = self.attention(x, mask)
-        x = x + skip
-        if not self.pre_ln:
-            x = self.lnorm(x)
-        x = self.ffn(x)
-        return x
 
 
 class SelfAttentionNetwork(HybridBlock):
@@ -292,145 +277,9 @@ class SelfAttentionNetwork(HybridBlock):
         preds = preds * (scale + self.normalizer_eps) + offset
         return preds
 
-    def _forward_step(
-        self,
-        F,
-        horizon: int,
-        target: Tensor,
-        covars: Optional[Tensor],
-        mask: Tensor,
-    ) -> Tensor:
-        target = F.expand_dims(target, axis=-1)
-        mask = F.expand_dims(mask, axis=-1)
-        value = self.target_proj(target)
-        if covars is not None:
-            value = value + covars
-        for block in self._blocks:
-            value = block(value, mask)
-        value = F.slice_axis(value, axis=1, begin=-horizon, end=None)
-        preds = self.output_proj(value)
-        return preds
 
 
 class SelfAttentionTrainingNetwork(SelfAttentionNetwork):
-    def hybrid_forward(
-        self,
-        F,
-        past_target: Tensor,
-        past_observed_values: Tensor,
-        past_is_pad: Tensor,
-        future_target: Tensor,
-        future_observed_values: Tensor,
-        past_feat_dynamic_real: Tensor,
-        past_feat_dynamic_cat: Tensor,
-        future_feat_dynamic_real: Tensor,
-        future_feat_dynamic_cat: Tensor,
-        feat_static_real: Tensor,
-        feat_static_cat: Tensor,
-    ) -> Tensor:
-        (
-            past_target,
-            past_covariates,
-            past_observed_values,
-            future_target,
-            future_covariates,
-            offset,
-            scale,
-        ) = self._preprocess(
-            F,
-            past_target,
-            past_observed_values,
-            past_is_pad,
-            past_feat_dynamic_real,
-            past_feat_dynamic_cat,
-            future_target,
-            future_feat_dynamic_real,
-            future_feat_dynamic_cat,
-            feat_static_real,
-            feat_static_cat,
-        )
-
-        target = F.concat(past_target, future_target, dim=1)
-        covars = F.concat(past_covariates, future_covariates, dim=1)
-        observed_values = F.concat(
-            past_observed_values, future_observed_values, dim=1
-        )
-
-        target = F.slice_axis(target, axis=1, begin=0, end=-1)
-        covars = F.slice_axis(covars, axis=1, begin=0, end=-1)
-        observed_values = F.slice_axis(
-            observed_values, axis=1, begin=0, end=-1
-        )
-
-        preds = self._forward_step(
-            F, self.prediction_length, target, covars, observed_values
-        )
-        preds = self._postprocess(F, preds, offset, scale)
-        future_target = future_target * (scale + self.normalizer_eps) + offset
-        loss = self.loss(future_target, preds)
-        loss = weighted_average(F, loss, future_observed_values)
-        return loss.mean()
 
 
 class SelfAttentionPredictionNetwork(SelfAttentionNetwork):
-    def hybrid_forward(
-        self,
-        F,
-        past_target: Tensor,
-        past_observed_values: Tensor,
-        past_is_pad: Tensor,
-        past_feat_dynamic_real: Tensor,
-        past_feat_dynamic_cat: Tensor,
-        future_feat_dynamic_real: Tensor,
-        future_feat_dynamic_cat: Tensor,
-        feat_static_real: Tensor,
-        feat_static_cat: Tensor,
-    ) -> Tensor:
-        (
-            past_target,
-            past_covariates,
-            past_observed_values,
-            _,
-            future_covariates,
-            offset,
-            scale,
-        ) = self._preprocess(
-            F,
-            past_target,
-            past_observed_values,
-            past_is_pad,
-            past_feat_dynamic_real,
-            past_feat_dynamic_cat,
-            None,
-            future_feat_dynamic_real,
-            future_feat_dynamic_cat,
-            feat_static_real,
-            feat_static_cat,
-        )
-
-        target = past_target
-        covars = past_covariates
-        observed_values = past_observed_values
-
-        preds = []
-        for step in range(self.prediction_length):
-            forecast = self._forward_step(
-                F, 1, target, covars, observed_values
-            )
-            preds.append(forecast)
-            next_target = F.slice_axis(forecast, axis=-1, begin=0, end=1)
-            next_target = F.squeeze(next_target, axis=-1)
-            next_covars = F.slice_axis(
-                future_covariates, axis=1, begin=step, end=step + 1
-            )
-            next_observed_value = F.ones_like(next_target)
-
-            target = F.concat(target, next_target, dim=1)
-            covars = F.concat(covars, next_covars, dim=1)
-            observed_values = F.concat(
-                observed_values, next_observed_value, dim=1
-            )
-        preds = F.concat(*preds, dim=1)
-        preds = self._postprocess(F, preds, offset, scale)
-        preds = F.swapaxes(preds, dim1=1, dim2=2)
-        return preds

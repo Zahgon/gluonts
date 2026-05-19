@@ -131,7 +131,7 @@ class LinkedList:
         """
         Peek last value.
         """
-        return self.end.val
+        pass
 
     def reverse(self):
         current = self.end
@@ -200,15 +200,6 @@ class Settings:
         for name, fn in self._cls_deps.items():
             self._dependency(name, fn)
 
-    def _reduce(self):
-        assert not self._context_count, "Cannot reduce within with-blocks."
-        compact = {}
-
-        # skip 1 (default dict)
-        for dct in itertools.islice(self._chain, 1):
-            compact.update(dct)
-
-        self._chain = LinkedList([self._default, compact])
 
     def _already_declared(self, key):
         return key in self._types or key in self._dependencies
@@ -254,10 +245,7 @@ class Settings:
         """
         Like `dict.get`.
         """
-        try:
-            return self[key]
-        except KeyError:
-            return default
+        pass
 
     def __contains__(self, key):
         try:
@@ -315,9 +303,6 @@ class Settings:
 
         dct[key] = value
 
-    def _set(self, key, value):
-        # Always assigns to the most recent dictionary in our chain.
-        self._set_(self._chain.last(), key, value)
 
     def _push(self, **kwargs):
         """
@@ -325,16 +310,8 @@ class Settings:
 
         Values are type-checked.
         """
-        el = self._chain.push({})
-        # Since we want to type-check, we add the entries manually.
-        for key, value in kwargs.items():
-            self._set(key, value)
+        pass
 
-        return el
-
-    def _pop(self):
-        assert len(self._chain) > 2, "Can't pop initial setting."
-        return self._chain.pop()
 
     def __repr__(self):
         inner = ", ".join(list(repr(dct) for dct in self._chain))
@@ -375,41 +352,7 @@ class Settings:
                 # Directly passed values always take precedence.
                 assert fn(3) == 3
         """
-
-        def dec(fn):
-            # We need the signature to be able to assemble the args later.
-            sig = inspect.signature(fn)
-
-            getters = {}
-
-            for key in keys:
-                assert key in sig.parameters, f"Key {key} not in arguments."
-                getters[key] = attrgetter(key)
-
-            for key, path in kwargs.items():
-                assert key in sig.parameters, f"Key {key} not in arguments."
-                assert key not in getters, f"Key {key} defined twice."
-                getters[key] = attrgetter(path)
-
-            @functools.wraps(fn)
-            def wrapper(*args, **kwargs):
-                # arguments are always keyword params
-                arguments = sig.bind_partial(*args, **kwargs).arguments
-
-                setting_kwargs = {}
-
-                for key, getter in getters.items():
-                    if key not in arguments:
-                        try:
-                            setting_kwargs[key] = getter(self)
-                        except (KeyError, AttributeError):
-                            continue
-
-                return fn(**arguments, **setting_kwargs)
-
-            return wrapper
-
-        return dec
+        pass
 
 
 class _ScopedSettings:
@@ -438,4 +381,4 @@ def inject(settings, *args, **kwargs):
     """
     `inject(settings, ...)` is the same as `settings._inject(...)`.
     """
-    return settings._inject(*args, **kwargs)
+    pass

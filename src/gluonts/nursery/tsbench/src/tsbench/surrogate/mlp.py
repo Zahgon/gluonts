@@ -104,9 +104,6 @@ class MLPSurrogate(Surrogate[ModelConfig], DatasetFeaturesMixin):
         elif objective == "ranking":
             self.loss = ListMLELoss(discount=discount)
 
-    @property
-    def required_cpus(self) -> int:
-        return 4
 
     def _fit(
         self, X: List[Config[ModelConfig]], y: npt.NDArray[np.float32]
@@ -162,16 +159,6 @@ class MLPSurrogate(Surrogate[ModelConfig], DatasetFeaturesMixin):
 
         return np.concatenate(predictions, axis=-1)
 
-    @property
-    def _trainer(self) -> pl.Trainer:
-        return pl.Trainer(
-            max_epochs=1000,
-            logger=False,
-            enable_checkpointing=False,
-            enable_model_summary=False,
-            enable_progress_bar=False,
-            gpus=int(torch.cuda.is_available()),
-        )
 
     def _init_model(self, input_dim: int) -> nn.Module:
         layer_sizes = [input_dim] + self.hidden_layer_sizes + [1]

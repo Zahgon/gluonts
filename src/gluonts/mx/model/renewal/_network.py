@@ -75,8 +75,6 @@ class DeepRenewalNetwork(gluon.HybridBlock):
                     init=mx.init.Constant(2),
                 )
 
-    def begin_state(self, batch_size: int) -> Tuple[Tensor, Tensor]:
-        return self.rnn_cell.begin_state(batch_size=batch_size)
 
     def distribution(
         self,
@@ -206,31 +204,7 @@ class DeepRenewalTrainingNetwork(DeepRenewalNetwork):
         loss
             negative log likelihood with shape (batch_size, history_length)
         """
-        cond_mean = self.mu_map(past_target, shift=True)
-        dist_interval, dist_size = self.distribution(
-            cond_mean, interval_alpha_bias, size_alpha_bias
-        )
-        data_interval, data_size = F.split(past_target, num_outputs=2, axis=-1)
-
-        # TODO: on windows, operators below may produce NaN values
-
-        log_prob = F.squeeze(
-            dist_interval.log_prob(data_interval - 1)
-            + dist_size.log_prob(data_size - 1),
-            axis=-1,
-        )
-        reverse_lengths = F.broadcast_sub(
-            F.maximum(1, F.max(valid_length)), valid_length
-        ).squeeze(-1)
-        mask = F.SequenceMask(
-            F.ones_like(log_prob),
-            reverse_lengths,
-            use_sequence_length=True,
-            axis=1,
-        )
-        loss = -F.where(1 - mask, log_prob, F.zeros_like(log_prob))
-
-        return loss
+        pass
 
 
 class DeepRenewalPredictionNetwork(DeepRenewalNetwork):
@@ -342,19 +316,3 @@ class DeepRenewalPredictionNetwork(DeepRenewalNetwork):
             shape=(-1, self.num_parallel_samples) + samples.shape[1:]
         ).swapaxes(2, 3)
 
-    def hybrid_forward(
-        self,
-        F,
-        past_target,
-        time_remaining,
-        interval_alpha_bias=None,
-        size_alpha_bias=None,
-        **kwargs,
-    ) -> Tensor:
-        return self.sampling_decoder(
-            F,
-            past_target=past_target,
-            interval_alpha_bias=interval_alpha_bias,
-            size_alpha_bias=size_alpha_bias,
-            time_remaining=time_remaining,
-        )

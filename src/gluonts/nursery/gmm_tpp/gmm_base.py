@@ -84,39 +84,18 @@ class GMMModel(gluon.HybridBlock):
     @staticmethod
     def _get_dx_(F, x, mu_):
         """@Return (batch_size, num_clusters, input_dim)"""
-        return F.broadcast_minus(x.expand_dims(1), mu_)
+        pass
 
     @staticmethod
     def _get_Rx_(F, dx_, kR_):
         """@Return (batch_size, num_clusters, input_dim)"""
-        kR_expand_0 = F.broadcast_like(
-            kR_.expand_dims(0), dx_, lhs_axes=(0,), rhs_axes=(0,)
-        )  # (batch_size, num_clusters, input_dim, input_dim)
-
-        Rx_ = F.batch_dot(kR_expand_0, dx_.expand_dims(-1)).squeeze(axis=-1)
-        return Rx_
+        pass
 
     def hybrid_forward(self, F, x, log_prior_, mu_, kR_):
         """
         E-step computes log_marginal and q(z|x)
         """
-        dx_ = self._get_dx_(F, x, mu_)
-        Rx_ = self._get_Rx_(F, dx_, kR_)
-
-        log_conditional = (
-            -0.5 * (Rx_**2).sum(axis=-1)
-            - 0.5 * self.input_dim * np.log(2 * np.pi)
-            + F.linalg.slogdet(kR_)[1]
-        )  # (batch, num_clusters)
-
-        log_complete = F.broadcast_add(
-            log_conditional, log_prior_.log_softmax()
-        )
-        log_incomplete = F.log(F.exp(log_complete).sum(axis=1))
-
-        qz = log_complete.softmax(axis=1)
-
-        return log_incomplete, qz
+        pass
 
     @staticmethod
     def m_step(x, qz):
@@ -182,16 +161,11 @@ def infer_lambda(model, *_, xmin, xmax):
     """
     infer lambda and intercept based on linear fitting at the base points.
     """
-    x = np.linspace(xmin, xmax).reshape((-1, 1))
-    y = np.ravel(model(mx.nd.array(x))[0].asnumpy())
-    slope, intercept = np.polyfit(np.ravel(x), np.ravel(y), 1)
-    return -slope
+    pass
 
 
 def elapsed(collection):
     """
     similar to enumerate but prepend elapsed time since loop starts.
     """
-    tic = time.time()
-    for x in collection:
-        yield time.time() - tic, x
+    pass

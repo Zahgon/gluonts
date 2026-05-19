@@ -47,32 +47,14 @@ class Categorical(Distribution):
     def F(self):
         return getF(self.log_probs)
 
-    @property
-    def probs(self):
-        if self._probs is None:
-            self._probs = self.log_probs.exp()
-        return self._probs
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.log_probs.shape[:-1]
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     @property
     def mean(self):
         return (self.probs * self.cats).sum(axis=-1)
 
-    @property
-    def stddev(self):
-        ex2 = (self.probs * self.cats.square()).sum(axis=-1)
-        return (ex2 - self.mean.square()).sqrt()
 
     def log_prob(self, x):
         F = self.F
@@ -81,18 +63,11 @@ class Categorical(Distribution):
         return log_prob
 
     def sample(self, num_samples=None, dtype=np.int32):
-        def s(bin_probs):
-            F = self.F
-            indices = F.sample_multinomial(bin_probs)
-            return indices
 
         return _sample_multiple(s, self.probs, num_samples=num_samples).astype(
             dtype
         )
 
-    @property
-    def args(self) -> List:
-        return [self.log_probs]
 
 
 class CategoricalOutput(DistributionOutput):
@@ -120,6 +95,3 @@ class CategoricalOutput(DistributionOutput):
         distr = Categorical(distr_args)
         return distr
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

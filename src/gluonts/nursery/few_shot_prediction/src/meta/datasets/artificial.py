@@ -101,17 +101,8 @@ class ArtificialDataModule(pl.LightningDataModule):
         self.num_workers = num_workers
         self.seed = seed
 
-    @property
-    def context_length(self) -> int:
-        return self.context_length_multiple * self.meta.prediction_length
 
-    @property
-    def support_length(self) -> int:
-        return self.support_length_multiple * self.prediction_length
 
-    @property
-    def prediction_length(self) -> int:
-        return self._prediction_length or self.meta.prediction_length
 
     @property
     def root(self) -> Path:
@@ -126,11 +117,7 @@ class ArtificialDataModule(pl.LightningDataModule):
         """
         Returns the dataset's metadata.
         """
-        return (
-            MetaData.parse_file(self.root / "metadata.json")
-            if self.root.exists()
-            else None
-        )
+        pass
 
     def setup(self, stage: Optional[str] = None) -> None:
         self.generate()

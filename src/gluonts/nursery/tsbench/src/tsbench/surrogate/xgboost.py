@@ -81,9 +81,6 @@ class XGBoostSurrogate(Surrogate[ModelConfig], DatasetFeaturesMixin):
             base_estimator = XGBRegressor(nthread=4)
         self.estimator = MultiOutputRegressor(base_estimator)
 
-    @property
-    def required_cpus(self) -> int:
-        return 4
 
     def _fit(
         self, X: List[Config[ModelConfig]], y: npt.NDArray[np.float32]

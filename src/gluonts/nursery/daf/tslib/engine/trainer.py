@@ -178,23 +178,7 @@ class Trainer(object):
                 raise KeyError(err_msg.format("metrics"))
             self.metrics.load_state_dict(metrics_state)
 
-    @property
-    def train_loader(self) -> Iterator:
-        return self.dataset.train_loader(
-            batch_size=self.batch_size,
-            shuffle=(not self.debug),
-            cuda_device=self.cuda_device,
-            n_workers=self.n_loader_workers,
-            n_batches=self.nb_epoch,
-        )
 
-    @property
-    def valid_loader(self) -> Iterator:
-        return self.dataset.valid_loader(
-            batch_size=self.eval_batch_size,
-            cuda_device=self.cuda_device,
-            n_workers=self.n_loader_workers,
-        )
 
     def fit(self) -> None:
         self.callbacks.on_train_begin()

@@ -89,16 +89,7 @@ class Scaler(nn.HybridBlock):
             == False``, and ``(N, 1, C)`` otherwise.
 
         """
-        scale = self.compute_scale(F, data, observed_indicator)
-
-        if self.keepdims:
-            scale = scale.expand_dims(axis=self.axis)
-            return F.broadcast_div(data, scale), scale
-        else:
-            return (
-                F.broadcast_div(data, scale.expand_dims(axis=self.axis)),
-                scale,
-            )
+        pass
 
 
 class MeanScaler(Scaler):

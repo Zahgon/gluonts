@@ -132,6 +132,3 @@ class TransformedDistributionOutput(DistributionOutput):
                 trans_distr, [AffineTransformation(loc=loc, scale=scale)]
             )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return self._event_shape

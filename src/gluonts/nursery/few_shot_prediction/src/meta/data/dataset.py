@@ -34,9 +34,6 @@ class TimeSeries:
     scale: Optional[torch.Tensor] = None
 
     # ---------------------------------------------------------------------------------------------
-    @property
-    def end_date(self) -> pd.Timestamp:
-        return self.start_date + (self.__len__() - 1) * self.start_date.freq
 
     @property
     def mean(self) -> torch.Tensor:
@@ -46,15 +43,6 @@ class TimeSeries:
     def std(self) -> torch.Tensor:
         return torch.std(self.values, dim=0)
 
-    def standardize(self, m: torch.Tensor, std: torch.Tensor):
-        return TimeSeries(
-            dataset_name=self.dataset_name,
-            item_id=self.item_id,
-            start_date=self.start_date,
-            values=(self.values - m) / std,
-            feat_static_cat=self.feat_static_cat,
-            scale=torch.cat([m, std]),
-        )
 
     def __len__(self) -> int:
         return self.values.shape[0]
@@ -114,9 +102,6 @@ class TimeSeriesDataset(Dataset[TimeSeries]):
             else series
         )
 
-    @property
-    def number_of_time_steps(self):
-        return sum([len(s) for s in self.series])
 
     def __len__(self) -> int:
         return len(self.series)

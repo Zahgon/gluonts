@@ -266,18 +266,8 @@ class MQF2Distribution(torch.distributions.Distribution):
 
         return result
 
-    @property
-    def batch_shape(self) -> torch.Size:
-        # last dimension is the hidden state size
-        return self.hidden_state.shape[:-1]
 
-    @property
-    def event_shape(self) -> torch.Size:
-        return torch.Size()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
 
 class MQF2DistributionOutput(DistributionOutput):
@@ -337,9 +327,6 @@ class MQF2DistributionOutput(DistributionOutput):
                 is_energy_score=self.is_energy_score,
             )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
 
 class TransformedMQF2Distribution(TransformedDistribution):

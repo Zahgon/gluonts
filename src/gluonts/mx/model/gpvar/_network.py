@@ -250,18 +250,7 @@ class GPVARTrainingNetwork(GPVARNetwork):
             Distribution arguments (context + prediction_length,
             number_of_arguments)
         """
-
-        return self.train_hybrid_forward(
-            F,
-            target_dimension_indicator,
-            past_time_feat,
-            past_target_cdf,
-            past_observed_values,
-            past_is_pad,
-            future_time_feat,
-            future_target_cdf,
-            future_observed_values,
-        )
+        pass
 
 
 class GPVARPredictionNetwork(GPVARNetwork):
@@ -337,17 +326,4 @@ class GPVARPredictionNetwork(GPVARNetwork):
             prediction_length, target_dim).
 
         """
-
-        return self.predict_hybrid_forward(
-            F=F,
-            target_dimension_indicator=target_dimension_indicator,
-            # (batch_size, history_length, num_features)
-            past_time_feat=past_time_feat,
-            # (batch_size, history_length, target_dim)
-            past_target_cdf=past_target_cdf,
-            # (batch_size, history_length, target_dim)
-            past_observed_values=past_observed_values,
-            past_is_pad=past_is_pad,
-            # (batch_size, prediction_length, num_features)
-            future_time_feat=future_time_feat,
-        )
+        pass

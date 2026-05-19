@@ -34,24 +34,7 @@ class FeatureImportanceResult(BaseModel):
         dimension of (features, pred_length), the pred_length shall be the
         same.
         """
-        dim = np.array(values.get("target")).ndim
-        assert (
-            0 < dim <= 2
-        ), "expected the feature importances array to be in the dimension of 1d or 2d only but got {dim}d from target"
-        for key, value in values.items():
-            if value:
-                assert (
-                    np.array(value).ndim == dim
-                ), f"dimension mismatch {key} with dim {np.array(value).ndim} and target with dim {dim} "
-        if dim == 1:
-            return values
-        shape = np.shape(values.get("target"))[dim - 1]
-        for key, value in values.items():
-            if value:
-                assert (
-                    np.shape(value)[dim - 1] == shape
-                ), f"shape mismatch {key} with shape {np.shape(value)} and target with shape {shape} "
-        return values
+        pass
 
     def mean(self, axis=None) -> "FeatureImportanceResult":
         mean_dict = {}

@@ -87,94 +87,22 @@ class MQF2MultiHorizonLightningModule(pl.LightningModule):
         loss
             Mean of the loss values
         """
-
-        feat_static_cat = batch["feat_static_cat"]
-        feat_static_real = batch["feat_static_real"]
-        past_time_feat = batch["past_time_feat"]
-        past_target = batch["past_target"]
-        future_time_feat = batch["future_time_feat"]
-        future_target = batch["future_target"]
-        past_observed_values = batch["past_observed_values"]
-
-        picnn = self.model.picnn
-
-        _, scale, hidden_state, _, _ = self.model.unroll_lagged_rnn(
-            feat_static_cat,
-            feat_static_real,
-            past_time_feat,
-            past_target,
-            past_observed_values,
-            future_time_feat,
-            future_target,
-        )
-
-        hidden_state = hidden_state[:, : self.model.context_length]
-
-        distr = self.model.output_distribution(picnn, hidden_state, scale)
-
-        context_target = past_target[:, -self.model.context_length + 1 :]
-        target = torch.cat(
-            (context_target, future_target),
-            dim=1,
-        )
-
-        loss_values = self.loss(distr, target)
-
-        return loss_values.mean()
+        pass
 
     def training_step(self, batch, batch_idx: int):  # type: ignore
         """
         Execute training step.
         """
-        train_loss = self.model.loss(
-            **select(self.inputs, batch),
-            future_observed_values=batch["future_observed_values"],
-            future_target=batch["future_target"],
-        ).mean()
-
-        self.log(
-            "train_loss",
-            train_loss,
-            on_epoch=True,
-            on_step=False,
-            prog_bar=True,
-        )
-        return train_loss
+        pass
 
     def validation_step(self, batch, batch_idx: int):  # type: ignore
         """
         Execute validation step.
         """
-        val_loss = self.model.loss(
-            **select(self.inputs, batch),
-            future_observed_values=batch["future_observed_values"],
-            future_target=batch["future_target"],
-        ).mean()
-
-        self.log(
-            "val_loss", val_loss, on_epoch=True, on_step=False, prog_bar=True
-        )
-        return val_loss
+        pass
 
     def configure_optimizers(self):
         """
         Returns the optimizer to use.
         """
-        optimizer = torch.optim.Adam(
-            self.model.parameters(),
-            lr=self.lr,
-            weight_decay=self.weight_decay,
-        )
-
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": ReduceLROnPlateau(
-                    optimizer=optimizer,
-                    mode="min",
-                    factor=0.5,
-                    patience=self.patience,
-                ),
-                "monitor": "train_loss",
-            },
-        }
+        pass

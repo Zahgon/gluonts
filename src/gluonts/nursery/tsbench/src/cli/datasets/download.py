@@ -68,7 +68,3 @@ def download(dataset: Optional[str], path: str):
     )
 
 
-def _download_dataset(name: str, base: Path):
-    dataset_cls = DATASET_REGISTRY[name](base)
-    dataset_cls.generate()
-    dataset_cls.prepare()

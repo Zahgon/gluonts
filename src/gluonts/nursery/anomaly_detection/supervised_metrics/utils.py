@@ -117,8 +117,4 @@ def ranges_to_singletons(
     -------
     List of singleton ranges.
     """
-    assert all(
-        r.step == 1 and r.start >= 0 and r.stop >= 0 for r in ranges
-    ), "Ranges should be consecutive and contain non-negative indices."
-
-    return [range(i, i + 1) for r in ranges for i in r]
+    pass

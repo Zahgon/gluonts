@@ -23,7 +23,7 @@ def LocalTabularPredictor(*args, **kwargs) -> Localizer:
 
     The constructor arguments are the same as for ``TabularEstimator``.
     """
-    return Localizer(TabularEstimator(*args, **kwargs))
+    pass
 
 
 __all__ = ["TabularEstimator", "LocalTabularPredictor"]

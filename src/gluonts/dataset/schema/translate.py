@@ -358,5 +358,3 @@ class Translator:
 
         return result
 
-    def get_fields(self):
-        return chain.from_iterable(op.fields() for op in self.fields.values())

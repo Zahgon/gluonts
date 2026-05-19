@@ -240,9 +240,6 @@ class PyTorchLightningEstimator(Estimator):
             predictor=self.create_predictor(transformation, best_model),
         )
 
-    @staticmethod
-    def _worker_init_fn(worker_id):
-        np.random.seed(np.random.get_state()[1][0] + worker_id)
 
     def train(
         self,
@@ -261,21 +258,3 @@ class PyTorchLightningEstimator(Estimator):
             ckpt_path=ckpt_path,
         ).predictor
 
-    def train_from(
-        self,
-        predictor: Predictor,
-        training_data: Dataset,
-        validation_data: Optional[Dataset] = None,
-        shuffle_buffer_length: Optional[int] = None,
-        cache_data: bool = False,
-        ckpt_path: Optional[str] = None,
-    ) -> PyTorchPredictor:
-        assert isinstance(predictor, PyTorchPredictor)
-        return self.train_model(
-            training_data,
-            validation_data,
-            from_predictor=predictor,
-            shuffle_buffer_length=shuffle_buffer_length,
-            cache_data=cache_data,
-            ckpt_path=ckpt_path,
-        ).predictor

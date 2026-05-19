@@ -92,20 +92,7 @@ class BinnedUniforms(Distribution):
 
         mode.shape : (*batch_shape,)
         """
-        bins_prob = self.bins_prob
-        values_max, index_max = torch.max(bins_prob, dim=-1)
-
-        indicator_max = values_max.unsqueeze(dim=-1) == bins_prob
-
-        # print(indicator_max.shape)
-        bin_centres = self.bin_centres.unsqueeze(dim=0)
-        # upper_edges.shape: (1, numb_bins)
-        batch_shape_extended = self.bins_prob[..., 0:1].shape
-        bin_centres = bin_centres.repeat(batch_shape_extended)
-
-        mode = (bin_centres * indicator_max).sum(dim=-1)
-
-        return mode
+        pass
 
     @property
     def median(self):
@@ -176,7 +163,7 @@ class BinnedUniforms(Distribution):
 
         'x' is to have shape (*batch_shape)
         """
-        return torch.exp(self.log_prob(x))
+        pass
 
     def get_one_hot_bin_indicator(self, x, in_float=False):
         """
@@ -487,6 +474,3 @@ class BinnedUniformsOutput(DistributionOutput):
             self.num_bins,
         )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

@@ -27,9 +27,6 @@ def cli():
     pass
 
 
-@cli.command()
-def version():
-    click.echo(gluonts.__version__)
 
 
 if __name__ == "__main__":

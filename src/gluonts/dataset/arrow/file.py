@@ -80,37 +80,16 @@ class ArrowFile(File):
             key.decode(): value.decode() for key, value in metadata.items()
         }
 
-    @property
-    def batch_offsets(self):
-        if self._batch_offsets is None:
-            self._batch_offsets = np.cumsum(
-                list(map(len, self.iter_batches()))
-            )
-
-        return self._batch_offsets
 
     def __post_init__(self):
         self.reader = pa.RecordBatchFileReader(self.path)
         self.decoder = ArrowDecoder.from_schema(self.schema)
 
-    def location_for(self, idx):
-        if idx == 0:
-            return 0, 0
-
-        batch_no = np.searchsorted(self.batch_offsets, idx)
-        if batch_no == 0:
-            batch_idx = idx
-        else:
-            batch_idx = idx - self.batch_offsets[batch_no - 1]
-        return batch_no, batch_idx
 
     @property
     def schema(self):
         return self.reader.schema
 
-    def iter_batches(self):
-        for batch_no in range(self.reader.num_record_batches):
-            yield self.reader.get_batch(batch_no)
 
     def __len__(self):
         if self._take is not None:
@@ -123,18 +102,6 @@ class ArrowFile(File):
         return 0
 
     def __iter__(self):
-        def iter_values():
-            # yield from starting batch
-            batch_no, batch_idx = self.location_for(self._start)
-            sub_batch = self.reader.get_batch(batch_no)[batch_idx:]
-            yield from self.decoder.decode_batch(sub_batch)
-
-            for batch_no_ in range(
-                batch_no + 1, self.reader.num_record_batches
-            ):
-                yield from self.decoder.decode_batch(
-                    self.reader.get_batch(batch_no_)
-                )
 
         yield from take(self._take, iter_values())
 
@@ -178,19 +145,6 @@ class ArrowStreamFile(File):
         }
 
     def __iter__(self):
-        def iter_values():
-            with open(self.path, "rb") as infile:
-                reader = pa.RecordBatchStreamReader(infile)
-                if self._decoder is None:
-                    self._decoder = ArrowDecoder.from_schema(reader.schema)
-
-                while True:
-                    try:
-                        batch = reader.read_next_batch()
-                    except StopIteration:
-                        return
-
-                    yield from self._decoder.decode_batch(batch)
 
         yield from take(self._take, drop(self._start, iter_values()))
 
@@ -236,16 +190,6 @@ class ParquetFile(File):
                 ]
             )
 
-    def location_for(self, idx):
-        if idx == 0:
-            return 0, 0
-
-        row_group = np.searchsorted(self._row_group_sizes, idx)
-        if row_group == 0:
-            row_index = idx
-        else:
-            row_index = idx - self._row_group_sizes[row_group - 1]
-        return row_group, row_index
 
     def metadata(self) -> Dict[str, str]:
         metadata = self.reader.schema_arrow.metadata
@@ -257,15 +201,6 @@ class ParquetFile(File):
         }
 
     def __iter__(self):
-        def iter_values():
-            row_group, row_index = self.location_for(self._start)
-
-            table = self.reader.read_row_group(row_group)
-            yield from self.decoder.decode_batch(table[row_index:])
-
-            for row_group_ in range(row_group + 1, len(self._row_group_sizes)):
-                table = self.reader.read_row_group(row_group_)
-                yield from self.decoder.decode_batch(table)
 
         yield from take(self._take, iter_values())
 

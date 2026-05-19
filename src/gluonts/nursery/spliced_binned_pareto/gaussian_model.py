@@ -44,7 +44,7 @@ class GaussianModel(nn.Module):
         """
         Moves members to a specified torch.device.
         """
-        self.device = device
+        pass
 
     def forward(self, x):
         """

@@ -55,11 +55,11 @@ class AffineTransformed(TransformedDistribution):
         """
         Returns the variance of the distribution.
         """
-        return self.base_dist.variance * self.scale**2
+        pass
 
     @property
     def stddev(self):
         """
         Returns the standard deviation of the distribution.
         """
-        return self.variance.sqrt()
+        pass

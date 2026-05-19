@@ -48,14 +48,7 @@ def _canonical_freqstr(n: int, name: str, suffix: Optional[str] = None) -> str:
     This allows us to easily string compare frequencies
     (solves ``"1X" != "X"``).
     """
-
-    if suffix:
-        name = f"{name}-{suffix}"
-
-    if n == 1:
-        return name
-
-    return f"{n}{name}"
+    pass
 
 
 _freq_numpy_to_pandas = {
@@ -87,8 +80,6 @@ _freq_pandas_to_numpy = dict(
 )
 
 
-def _canonical_name(name: str) -> str:
-    return {"MIN": "T", "Y": "A"}.get(name, name)
 
 
 @dataclass
@@ -126,9 +117,6 @@ class Freq:
     def __init_passed_kwargs__(self):
         return {"name": self.name, "n": self.n}
 
-    @property
-    def np_freq(self) -> NpFreq:
-        return _freq_pandas_to_numpy[self.name]
 
     @property
     def step(self):
@@ -196,15 +184,6 @@ class Freq:
 
         return start + self.step * count
 
-    def range(self, start: np.datetime64, count: int) -> np.ndarray:
-        if self.name == "B":
-            # We first collect all days, even non business days to then filter
-            # for business days, of which we then take, each n-th.
-            periods = np.arange(start, np.busday_offset(start, count * self.n))
-            periods = periods[np.is_busday(periods)]
-            return periods[:: self.n]
-
-        return np.arange(start, count * self.step, self.step)
 
     def __str__(self) -> str:
         return _canonical_freqstr(self.n, self.name, self.suffix)

@@ -36,8 +36,6 @@ class InpuDataConfig(BaseModel):
     def __getitem__(self, item):
         return self.__root__[item]
 
-    def channels(self):
-        return self.__root__
 
     def channel_names(self):
         return list(self.__root__.keys())
@@ -74,18 +72,7 @@ class TrainEnv:
         self.hyperparameters = hyperparameters
         self.env = env
 
-    def install_dynamic(self):
-        install_and_restart(self.channels.get("code"), self.path.base / "code")
 
-    def copy_code_to_model(self):
-        code = self.channels.get("code")
-        if code is not None:
-            dest = self.path.model / "code"
-
-            if dest.is_dir():
-                shutil.rmtree(dest)
-
-            shutil.copytree(code, dest)
 
     def _load_inputdataconfig(self) -> Optional[InpuDataConfig]:
         if self.path.inputdataconfig.exists():

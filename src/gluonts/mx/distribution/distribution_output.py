@@ -65,10 +65,6 @@ class ArgProj(gluon.HybridBlock):
             self.register_child(dense)
         self.domain_map = domain_map
 
-    def hybrid_forward(self, F, x: Tensor, **kwargs) -> Tuple[Tensor]:
-        params_unbounded = [proj(x) for proj in self.proj]
-
-        return self.domain_map(*params_unbounded)
 
 
 class Output:
@@ -79,13 +75,7 @@ class Output:
     args_dim: Dict[str, int]
     _dtype: Type = np.float32
 
-    @property
-    def dtype(self):
-        return self._dtype
 
-    @dtype.setter
-    def dtype(self, dtype: Type):
-        self._dtype = dtype
 
     @classmethod
     def eps(cls):
@@ -155,7 +145,7 @@ class DistributionOutput(Output):
         Number of event dimensions, i.e., length of the `event_shape` tuple, of
         the distributions that this object constructs.
         """
-        return len(self.event_shape)
+        pass
 
     @property
     def value_in_support(self) -> float:
@@ -165,7 +155,7 @@ class DistributionOutput(Output):
 
         This value will be used when padding data series.
         """
-        return 0.0
+        pass
 
     def domain_map(self, F, *args: Tensor):
         r"""

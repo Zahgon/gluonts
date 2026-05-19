@@ -45,5 +45,3 @@ def decode_nested_parameters(parameters: dict) -> dict:
     return valmap(serde.flat.decode, inputs)
 
 
-def encode_nested_parameters(obj) -> dict:
-    return serde.flat.encode(obj)

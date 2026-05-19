@@ -157,13 +157,7 @@ class MeterDict(object):
         for _, meter in self._named_meters():
             meter.restart()
 
-    @property
-    def value(self) -> Dict:
-        return {name: meter.value for name, meter in self._named_meters()}
 
-    @property
-    def best(self) -> Dict:
-        return {name: meter.best for name, meter in self._named_meters()}
 
     def state_dict(self) -> Dict:
         return {
@@ -185,10 +179,6 @@ class MeterDict(object):
             warnings.warn(f"unexpected keys in state_dict: {unexpected_keys}")
 
     def __repr__(self) -> str:
-        def _add_spaces(str_, n_spaces=4):
-            return "\n".join(
-                [(" " * n_spaces) + line for line in str_.split("\n")]
-            )
 
         main_str = "\n".join(
             [f"{name}: {repr(meter)}" for name, meter in self._meters.items()]

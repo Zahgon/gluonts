@@ -63,14 +63,6 @@ class SCSG:
         self.eval_model = eval_model
         self.tensorboard_path = tensorboard_path
 
-    def inference(self, model, inputs):
-        output = model(*inputs)
-        output = output.mean()
-        if isinstance(output, (list, tuple)):
-            loss = output[0]
-        else:
-            loss = output
-        return loss
 
     def __call__(
         self, net: nn.Module, input_names: List[str], data_loaders

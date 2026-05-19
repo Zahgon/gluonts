@@ -45,45 +45,7 @@ class ForecastingDataset(WindowsDataset):
         tgt = ts[tgt_window]
         return ctx, tgt
 
-    def _fetch(self, index: int) -> Tuple[TimeSeries, slice, slice]:
-        scope_id, tgt_head = self.windows[index]
-        tgt_tail = tgt_head + self.horizon
-        ctx_tail = tgt_head - self.gap
-        ctx_head = None if self.context is None else ctx_tail - self.context
-        ctx_window = slice(ctx_head, ctx_tail)
-        tgt_window = slice(tgt_head, tgt_tail)
-        return self.corpus[scope_id], ctx_window, tgt_window
 
-    @classmethod
-    def sliding_windows(
-        cls,
-        corpus: TimeSeriesCorpus,
-        horizon: int,
-        context: Optional[int] = None,
-        gap: int = 0,
-        shift: Optional[int] = None,
-    ):
-        shift = shift or horizon
-        windows = []
-        for scope_id, series in tqdm(
-            enumerate(corpus),
-            desc="Building dataset",
-            total=len(corpus),
-        ):
-            stop = len(series) - horizon
-            start = gap
-            if context is not None:
-                start += context
-            windows.extend(
-                [(scope_id, index) for index in np.arange(stop, start, -shift)]
-            )
-        return cls(
-            corpus,
-            windows=windows,
-            horizon=horizon,
-            context=context,
-            gap=gap,
-        )
 
     @classmethod
     def random_windows(

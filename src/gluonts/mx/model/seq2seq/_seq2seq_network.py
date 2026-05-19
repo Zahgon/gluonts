@@ -70,37 +70,6 @@ class Seq2SeqNetworkBase(mx.gluon.HybridBlock):
             self.quantile_proj = quantile_output.get_quantile_proj()
             self.loss = quantile_output.get_loss()
 
-    def compute_decoder_outputs(
-        self,
-        F,
-        past_target: Tensor,
-        feat_static_cat: Tensor,
-        past_feat_dynamic_real: Tensor,
-        future_feat_dynamic_real: Tensor,
-    ) -> Tensor:
-        scaled_target, scale = self.scaler(
-            past_target, F.ones_like(past_target)
-        )
-
-        embedded_cat = self.embedder(
-            feat_static_cat
-        )  # (batch_size, num_features * embedding_size)
-
-        encoder_output_static, encoder_output_dynamic = self.encoder(
-            scaled_target, embedded_cat, past_feat_dynamic_real
-        )
-        decoder_input_static, decoder_input_dynamic = self.enc2dec(
-            encoder_output_static,
-            encoder_output_dynamic,
-            future_feat_dynamic_real,
-        )
-        decoder_output = self.decoder(
-            decoder_input_static, decoder_input_dynamic
-        )
-        scaled_decoder_output = F.broadcast_mul(
-            decoder_output, scale.expand_dims(-1).expand_dims(-1)
-        )
-        return scaled_decoder_output
 
 
 class Seq2SeqTrainingNetwork(Seq2SeqNetworkBase):
@@ -135,20 +104,7 @@ class Seq2SeqTrainingNetwork(Seq2SeqNetworkBase):
         mx.nd.NDArray or mx.sym.Symbol
            the computed loss
         """
-        scaled_decoder_output = self.compute_decoder_outputs(
-            F,
-            past_target=past_target,
-            feat_static_cat=feat_static_cat,
-            past_feat_dynamic_real=past_feat_dynamic_real,
-            future_feat_dynamic_real=future_feat_dynamic_real,
-        )
-        projected = self.quantile_proj(scaled_decoder_output)
-        loss = self.loss(future_target, projected)
-        # TODO: there used to be "nansum" here, to be fully equivalent we
-        # TODO: should have a "nanmean" here
-        # TODO: shouldn't we sum and divide by the number of observed values
-        # TODO: here?
-        return loss
+        pass
 
 
 class Seq2SeqPredictionNetwork(Seq2SeqNetworkBase):
@@ -180,13 +136,4 @@ class Seq2SeqPredictionNetwork(Seq2SeqNetworkBase):
         mx.nd.NDArray or mx.sym.Symbol
             the predicted sequence
         """
-        scaled_decoder_output = self.compute_decoder_outputs(
-            F,
-            past_target=past_target,
-            feat_static_cat=feat_static_cat,
-            past_feat_dynamic_real=past_feat_dynamic_real,
-            future_feat_dynamic_real=future_feat_dynamic_real,
-        )
-        predictions = self.quantile_proj(scaled_decoder_output)
-
-        return (predictions,), None, None
+        pass

@@ -29,8 +29,6 @@ class LookupValues(gluon.HybridBlock):
         with self.name_scope():
             self.bin_values = self.params.get_constant("bin_values", values)
 
-    def hybrid_forward(self, F, indices, bin_values):
-        return F.take(bin_values, indices)
 
 
 def conv1d(channels, kernel_size, in_channels, use_bias=True, **kwargs):
@@ -102,16 +100,6 @@ class CausalDilatedResidue(nn.HybridBlock):
                 else None
             )
 
-    def hybrid_forward(self, F, x):
-        u = self.conv_sigmoid(x) * self.conv_tanh(x)
-        s = self.skip(u)
-        if not self.return_dense_out:
-            return s, F.zeros(shape=(1,))
-        output = self.residue(u)
-        output = output + F.slice_axis(
-            x, begin=(self.kernel_size - 1) * self.dilation, end=None, axis=-1
-        )
-        return s, output
 
 
 class WaveNet(nn.HybridBlock):
@@ -398,39 +386,7 @@ class WaveNetTraining(WaveNet):
         Tensor
             Returns loss with shape (batch_size,)
         """
-        full_target = F.concat(past_target, future_target, dim=-1).astype(
-            "int32"
-        )
-        full_features = self.get_full_features(
-            F,
-            feat_static_cat=feat_static_cat,
-            past_observed_values=past_observed_values,
-            past_time_feat=past_time_feat,
-            future_time_feat=future_time_feat,
-            future_observed_values=future_observed_values,
-            scale=scale,
-        )
-        embedding = self.target_feature_embedding(
-            F,
-            F.slice_axis(full_target, begin=0, end=-1, axis=-1),
-            F.slice_axis(full_features, begin=1, end=None, axis=-1),
-        )
-        unnormalized_output, _ = self.base_net(F, embedding)
-
-        label = F.slice_axis(
-            full_target, begin=self.receptive_field, end=None, axis=-1
-        )
-
-        full_observed = F.expand_dims(
-            F.concat(past_observed_values, future_observed_values, dim=-1),
-            axis=1,
-        )
-        loss_weight = F.slice_axis(
-            full_observed, begin=self.receptive_field, end=None, axis=-1
-        )
-        loss_weight = F.expand_dims(loss_weight, axis=2)
-        loss = self.cross_entropy_loss(unnormalized_output, label, loss_weight)
-        return loss
+        pass
 
 
 class WaveNetSampler(WaveNet):
@@ -485,18 +441,7 @@ class WaveNetSampler(WaveNet):
             queue corresponding to layer `l` has shape:
             (batch_size, n_residue, 2^l).
         """
-        o = self.target_feature_embedding(F, past_target, features)
-
-        queues = []
-        for i, d in enumerate(self.dilations):
-            sz = 1 if d == 2 ** (self.dilation_depth - 1) else d * 2
-            _, o = self.residuals[i](o)
-            if not self.is_last_layer(i):
-                o_chunk = F.slice_axis(o, begin=-sz - 1, end=-1, axis=-1)
-            else:
-                o_chunk = o
-            queues.append(o_chunk)
-        return queues
+        pass
 
     def hybrid_forward(
         self,
@@ -535,82 +480,4 @@ class WaveNetSampler(WaveNet):
             Prediction samples with shape (batch_size, num_samples,
             pred_length)
         """
-
-        def blow_up(u):
-            """
-            Expand to (batch_size x num_samples)
-            """
-            return F.repeat(u, repeats=self.num_samples, axis=0)
-
-        past_target = past_target.astype("int32")
-        full_features = self.get_full_features(
-            F,
-            feat_static_cat=feat_static_cat,
-            past_observed_values=past_observed_values,
-            past_time_feat=past_time_feat,
-            future_time_feat=future_time_feat,
-            future_observed_values=None,
-            scale=scale,
-        )
-
-        # To compute queues for the first step, we need features from
-        # -self.pred_length - self.receptive_field + 1 to -self.pred_length + 1
-        features_end_ix = (
-            -self.pred_length + 1 if self.pred_length > 1 else None
-        )
-        queues = self.get_initial_conv_queues(
-            F,
-            past_target=F.slice_axis(
-                past_target, begin=-self.receptive_field, end=None, axis=-1
-            ),
-            features=F.slice_axis(
-                full_features,
-                begin=-self.pred_length - self.receptive_field + 1,
-                end=features_end_ix,
-                axis=-1,
-            ),
-        )
-        queues = [blow_up(queue) for queue in queues]
-
-        res = F.slice_axis(past_target, begin=-2, end=None, axis=-1)
-        res = blow_up(res)
-        for n in range(self.pred_length):
-            # Generate one-step ahead predictions. The input consists of target
-            # and features corresponding to the last two time steps.
-            current_target = F.slice_axis(res, begin=-2, end=None, axis=-1)
-            current_features = F.slice_axis(
-                full_features,
-                begin=self.receptive_field + n - 1,
-                end=self.receptive_field + n + 1,
-                axis=-1,
-            )
-            embedding = self.target_feature_embedding(
-                F,
-                target=current_target,
-                features=blow_up(current_features),
-            )
-
-            # (batch_size, 1, num_bins) where 1 corresponds to the time axis.
-            unnormalized_outputs, queues = self.base_net(
-                F, embedding, one_step_prediction=True, queues=queues
-            )
-            if self.temperature > 0:
-                # (batch_size, 1, num_bins) where 1 corresponds to the time
-                # axis.
-                probs = F.softmax(
-                    unnormalized_outputs / self.temperature, axis=-1
-                )
-                # (batch_size, 1)
-                y = F.sample_multinomial(probs)
-            else:
-                # (batch_size, 1)
-                y = F.argmax(unnormalized_outputs, axis=-1)
-            y = y.astype("int32")
-            res = F.concat(res, y, num_args=2, dim=-1)
-        samples = F.slice_axis(res, begin=-self.pred_length, end=None, axis=-1)
-        samples = samples.reshape(
-            shape=(-1, self.num_samples, self.pred_length)
-        )
-        samples = self.post_transform(samples)
-        samples = F.broadcast_mul(scale.expand_dims(axis=1), samples)
-        return samples
+        pass

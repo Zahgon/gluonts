@@ -108,17 +108,3 @@ def run_parallel(
     return cast(List[U], result)
 
 
-def _worker(
-    execute: Callable[[Any], Any],
-    inputs: mp.Queue,  # type: ignore
-    outputs: mp.Queue,  # type: ignore
-) -> None:
-    while True:
-        # Timeout is needed to shutdown workers if no tasks are available anymore.
-        try:
-            i = inputs.get(timeout=10)
-        except Empty:
-            return
-        data = _GLOBAL_DATA_CACHE[i]  # type: ignore
-        output = execute(data)
-        outputs.put((i, output))

@@ -63,4 +63,4 @@ class MLP(nn.HybridBlock):
         Tensor
             Output of the MLP given the input tensor.
         """
-        return self.layers(x)
+        pass

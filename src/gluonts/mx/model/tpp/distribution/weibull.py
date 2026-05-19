@@ -42,17 +42,8 @@ class Weibull(TPPDistribution):
         self.rate = rate
         self.shape = shape
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.rate.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     @property
     def mean(self) -> Tensor:
@@ -166,6 +157,3 @@ class WeibullOutput(TPPDistributionOutput):
         shape = F.Activation(shape, "softrelu")
         return rate.squeeze(axis=-1), shape.squeeze(axis=-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

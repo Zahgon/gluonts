@@ -33,14 +33,6 @@ def make_predictions(
 def truncate_target(
     dataset: Dataset, prediction_length: int, lead_time: int = 0
 ):
-    def _truncate(data: DataEntry):
-        data = data.copy()
-        target = data["target"]
-        assert (
-            target.shape[-1] >= prediction_length
-        )  # handles multivariate case (target_dim, history_length)
-        data["target"] = target[..., : -prediction_length - lead_time]
-        return data
 
     return map(_truncate, dataset)
 
@@ -56,8 +48,6 @@ def to_dataframe_it(test):
             freq=freq,
         )
 
-    def _to_dataframe(entry: Dict):
-        return pd.DataFrame(entry["target"], index=period_index(entry))
 
     return map(_to_dataframe, test)
 

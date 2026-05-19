@@ -63,34 +63,7 @@ class Settings(BaseSettings):
     sagemaker_max_payload_in_mb: int = 6
     sagemaker_max_concurrent_transforms: int = 2**32 - 1
 
-    @property
-    def sagemaker_server_bind(self) -> str:
-        return f"{self.sagemaker_server_address}:{self.sagemaker_server_port}"
 
-    @property
-    def number_of_workers(self) -> int:
-        cpu_count = multiprocessing.cpu_count()
-
-        if self.model_server_workers:
-            logging.info(
-                f"Using {self.model_server_workers} workers "
-                "(set by MODEL_SERVER_WORKERS environment variable)."
-            )
-            return self.model_server_workers
-
-        elif (
-            self.sagemaker_batch
-            and self.sagemaker_max_concurrent_transforms < cpu_count
-        ):
-            logger.info(
-                f"Using {self.sagemaker_max_concurrent_transforms} workers "
-                "(set by MaxConcurrentTransforms parameter in batch mode)."
-            )
-            return self.sagemaker_max_concurrent_transforms
-
-        else:
-            logger.info(f"Using {cpu_count} workers")
-            return cpu_count
 
 
 def make_flask_app(

@@ -92,13 +92,7 @@ class InvertibleResnetHybridBlock(BijectionHybridBlock):
                 flatten=self._flatten,
             )
 
-    @property
-    def event_shape(self):
-        return self._event_shape
 
-    @property
-    def event_dim(self) -> int:
-        return len(self.event_shape)
 
     def f(self, x: Tensor) -> Tensor:
         """

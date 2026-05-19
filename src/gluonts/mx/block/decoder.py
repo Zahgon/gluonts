@@ -127,11 +127,7 @@ class ForkingMLPDecoder(Seq2SeqDecoder):
             mlp output, shape (batch_size, sequence_length, decoder_length,
             decoder_mlp_dim_seq[0]).
         """
-        mlp_output = self.model(dynamic_input)
-        mlp_output = mlp_output.reshape(
-            shape=(0, 0, self.dec_len, self.final_dims)
-        )
-        return mlp_output
+        pass
 
 
 class OneShotDecoder(Seq2SeqDecoder):
@@ -189,10 +185,4 @@ class OneShotDecoder(Seq2SeqDecoder):
         Tensor
             mlp output, shape (batch_size, decoder_length, size of last layer)
         """
-        static_input_tile = self.expander(static_input).reshape(
-            (0, self.decoder_length, self.static_outputs_per_time_step)
-        )
-        combined_input = F.concat(dynamic_input, static_input_tile, dim=2)
-
-        out = self.mlp(combined_input)  # (N, T, layer_sizes[-1])
-        return out
+        pass

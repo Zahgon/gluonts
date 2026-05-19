@@ -95,7 +95,7 @@ class PassThroughEnc2Dec(Seq2SeqEnc2Dec):
             shape (batch_size, sequence_length, channels_seq[-1] + 1) or
             (N, T, C)
         """
-        return encoder_output_static, encoder_output_dynamic
+        pass
 
 
 class FutureFeatIntegratorEnc2Dec(Seq2SeqEnc2Dec):
@@ -139,19 +139,4 @@ class FutureFeatIntegratorEnc2Dec(Seq2SeqEnc2Dec):
             (N, T, C)
 
         """
-
-        # flatten the last two dimensions:
-        # => (batch_size, sequence_length, decoder_length * num_feat_dynamic),
-        # where num_future_feat_dynamic = decoder_length * num_feat_dynamic
-        future_features_dynamic = F.reshape(
-            future_features_dynamic, shape=(0, 0, -1)
-        )
-
-        # concatenate output of decoder and future_feat_dynamic covariates:
-        # => (batch_size, sequence_length, num_dec_input_dynamic +
-        # num_future_feat_dynamic)
-        total_dec_input_dynamic = F.concat(
-            encoder_output_dynamic, future_features_dynamic, dim=2
-        )
-
-        return encoder_output_static, total_dec_input_dynamic
+        pass

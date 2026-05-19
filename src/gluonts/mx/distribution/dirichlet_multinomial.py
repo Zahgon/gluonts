@@ -74,17 +74,8 @@ class DirichletMultinomial(Distribution):
     def F(self):
         return getF(self.alpha)
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.alpha.shape[:-1]
 
-    @property
-    def event_shape(self) -> Tuple:
-        return self.alpha.shape[-1:]
 
-    @property
-    def event_dim(self) -> int:
-        return 1
 
     def log_prob(self, x: Tensor) -> Tensor:
         F = self.F
@@ -118,30 +109,6 @@ class DirichletMultinomial(Distribution):
             F.broadcast_div(alpha, sum_alpha.expand_dims(axis=-1)) * n_trials
         )
 
-    @property
-    def variance(self) -> Tensor:
-        F = self.F
-        alpha = self.alpha
-        d = self.dim
-        n_trials = self.n_trials
-
-        sum_alpha = F.sum(alpha, axis=-1)
-        scale = F.sqrt(
-            (sum_alpha + 1) / (sum_alpha + n_trials) / n_trials
-        ).expand_dims(axis=-1)
-        scaled_alpha = F.broadcast_div(self.mean / n_trials, scale)
-
-        cross = F.linalg_gemm2(
-            scaled_alpha.expand_dims(axis=-1),
-            scaled_alpha.expand_dims(axis=-1),
-            transpose_b=True,
-        )
-
-        diagonal = make_nd_diag(F, F.broadcast_div(scaled_alpha, scale), d)
-
-        dir_variance = diagonal - cross
-
-        return dir_variance
 
     def sample(
         self, num_samples: Optional[int] = None, dtype=np.float32
@@ -149,16 +116,6 @@ class DirichletMultinomial(Distribution):
         dim = self.dim
         n_trials = self.n_trials
 
-        def s(alpha: Tensor) -> Tensor:
-            F = getF(alpha)
-            samples_gamma = F.sample_gamma(
-                alpha=alpha, beta=F.ones_like(alpha), dtype=dtype
-            )
-            sum_gamma = F.sum(samples_gamma, axis=-1, keepdims=True)
-            samples_s = F.broadcast_div(samples_gamma, sum_gamma)
-
-            cat_samples = F.sample_multinomial(samples_s, shape=n_trials)
-            return F.sum(F.one_hot(cat_samples, dim), axis=-2)
 
         samples = _sample_multiple(
             s, alpha=self.alpha, num_samples=num_samples
@@ -188,6 +145,3 @@ class DirichletMultinomialOutput(DistributionOutput):
         alpha = F.Activation(alpha_vector, act_type="softrelu")
         return alpha
 
-    @property
-    def event_shape(self) -> Tuple:
-        return (self.dim,)

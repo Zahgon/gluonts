@@ -47,16 +47,8 @@ STATE_ARTIFACT_FILE_NAME = "state"
 mx.autograd = autograd
 
 
-def check_loss_finite(val: float) -> None:
-    if not np.isfinite(val):
-        raise GluonTSDataError(
-            "Encountered invalid loss value! Try reducing the learning rate "
-            "or try a different likelihood."
-        )
 
 
-def loss_value(loss: mx.metric.Loss) -> float:
-    return loss.get_name_value()[0][1]
 
 
 class Trainer:
@@ -174,13 +166,6 @@ class Trainer:
 
         self.callbacks = CallbackList(callbacks)
 
-    def count_model_params(self, net: nn.HybridBlock) -> int:
-        params = net.collect_params()
-        num_params = 0
-        for p in params:
-            v = params[p]
-            num_params += np.prod(v.shape)
-        return num_params
 
     def __call__(
         self,
@@ -218,11 +203,6 @@ class Trainer:
             static_shape=True,
         ):
 
-            def base_path() -> str:
-                return os.path.join(
-                    gluonts_temp,
-                    f"{STATE_ARTIFACT_FILE_NAME}_{uuid.uuid4()}",
-                )
 
             best_epoch_info = {
                 "params_path": "{}-{}.params".format(base_path(), "init"),
@@ -244,165 +224,6 @@ class Trainer:
 
             first_forward = True
 
-            def loop(  # todo call run epoch
-                epoch_no,
-                batch_iter,
-                num_batches_to_use: Optional[int] = None,
-                is_training: bool = True,
-            ) -> mx.metric.Loss:
-                nonlocal first_forward
-                tic = time.time()
-
-                epoch_loss = mx.metric.Loss()
-
-                if is_training:
-                    # We should not call this method if we haven't compiled the
-                    # network yet. Instead, this callback is called after
-                    # network initialization.
-                    if not first_forward:
-                        self.callbacks.on_train_epoch_start(
-                            training_network=net
-                        )
-                else:
-                    self.callbacks.on_validation_epoch_start(
-                        training_network=net
-                    )
-
-                batch_iter = itertools.islice(batch_iter, num_batches_to_use)
-                it = tqdm(batch_iter, total=num_batches_to_use)
-                any_batches = False
-
-                for batch_no, batch in enumerate(it, start=1):
-                    any_batches = True
-
-                    # `batch` here is expected to be a dictionary whose fields
-                    # should correspond 1-to-1 with the network inputs
-                    # see below how `batch.values()` is fed into the network
-                    if self.halt:
-                        break
-
-                    if first_forward:
-                        first_forward = False
-                        _ = net(*batch.values())
-
-                        self.callbacks.on_network_initializing_end(
-                            training_network=net
-                        )
-
-                        # Call the batch start callback as the model was not
-                        # compiled before
-                        self.callbacks.on_train_epoch_start(
-                            training_network=net
-                        )
-
-                    with mx.autograd.record():
-                        # we set the mode explicitly as by default mxnet
-                        # assumes predict mode and hence dropout layers are
-                        # not used if the mode is not explicitly set to
-                        # training
-                        mode = (
-                            autograd.train_mode
-                            if is_training
-                            else autograd.predict_mode
-                        )
-                        with mode():
-                            output = net(*batch.values())
-
-                        # network can returns several outputs, the first being
-                        # always the loss when having multiple outputs, the
-                        # forward returns a list in the case of hybrid and a
-                        # tuple otherwise we may wrap network outputs in the
-                        # future to avoid this type check
-                        if isinstance(output, (list, tuple)):
-                            loss = output[0]
-                        else:
-                            loss = output
-
-                        batch_size = loss.shape[0]
-
-                    if not np.isfinite(ndarray.sum(loss).asscalar()):
-                        logger.warning(
-                            "Batch [%d] of Epoch[%d] gave NaN loss and it will"
-                            " be ignored",
-                            batch_no,
-                            epoch_no,
-                        )
-                        should_continue = True
-                    else:
-                        if is_training:
-                            loss.backward()
-                            trainer.step(batch_size)
-
-                            should_continue = (
-                                self.callbacks.on_train_batch_end(
-                                    training_network=net
-                                )
-                            )
-                        else:
-                            should_continue = (
-                                self.callbacks.on_validation_batch_end(
-                                    training_network=net
-                                )
-                            )
-
-                        epoch_loss.update(None, preds=loss)
-
-                    lv = loss_value(epoch_loss)
-                    it.set_postfix(
-                        ordered_dict={
-                            "epoch": f"{epoch_no + 1}/{self.epochs}",
-                            ("" if is_training else "validation_")
-                            + "avg_epoch_loss": lv,
-                        },
-                        refresh=False,
-                    )
-                    # print out parameters of the network at the first pass
-                    if batch_no == 1 and epoch_no == 0:
-                        net_name = type(net).__name__
-                        num_model_param = self.count_model_params(net)
-                        logger.info(
-                            f"Number of parameters in {net_name}:"
-                            f" {num_model_param}"
-                        )
-                    if not should_continue:
-                        self.halt = True
-                        break
-                it.close()
-
-                if not any_batches:
-                    if is_training:
-                        error_data_type = "training"
-                    else:
-                        error_data_type = "validation"
-                    raise GluonTSDataError(
-                        "No "
-                        + error_data_type
-                        + " data batch could be constructed; "
-                        "this usually indicates that the "
-                        + error_data_type
-                        + " dataset "
-                        "is empty, or consists of too short series."
-                        " If using a random data sampler, this might "
-                        "be caused by not taking enough samples."
-                    )
-
-                # mark epoch end time and log time cost of current epoch
-                if not self.halt:
-                    toc = time.time()
-                    logger.info(
-                        "Epoch[%d] Elapsed time %.3f seconds",
-                        epoch_no,
-                        (toc - tic),
-                    )
-
-                    logger.info(
-                        "Epoch[%d] Evaluation metric '%s'=%f",
-                        epoch_no,
-                        ("" if is_training else "validation_") + "epoch_loss",
-                        lv,
-                    )
-
-                return epoch_loss
 
             self.callbacks.on_train_start(max_epochs=self.epochs)
 

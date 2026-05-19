@@ -133,12 +133,6 @@ class SNMLPBlock(mx.gluon.HybridBlock):
             self.register_child(last_lin)
             self._layers += [last_lin]
 
-    def get_weights(self):
-        return [
-            layer.weight
-            for layer in self._layers
-            if isinstance(layer, SNDense)
-        ]
 
     def hybrid_forward(self, F, x: Tensor) -> Tensor:
         """
@@ -154,11 +148,7 @@ class SNMLPBlock(mx.gluon.HybridBlock):
             output of SNMLPBlock
 
         """
-        self._cached_inputs = []
-        for layer in self._layers:
-            self._cached_inputs += [x]
-            x = layer(x)
-        return x
+        pass
 
     def jacobian(self, x: Tensor) -> Tensor:
         """

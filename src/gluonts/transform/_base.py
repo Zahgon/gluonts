@@ -145,8 +145,6 @@ class SimpleTransformation(MapTransformation):
     Element wise transformations that are the same in train and test mode.
     """
 
-    def map_transform(self, data: DataEntry, is_train: bool) -> DataEntry:
-        return self.transform(data)
 
     @abc.abstractmethod
     def transform(self, data: DataEntry) -> DataEntry:
@@ -214,11 +212,6 @@ class FilterTransformation(FlatMapTransformation):
         super().__init__()
         self.condition = condition
 
-    def flatmap_transform(
-        self, data: DataEntry, is_train: bool
-    ) -> Iterator[DataEntry]:
-        if self.condition(data):
-            yield data
 
 
 # The __init__ in FilterTransformation is not validated but the __init__ in the
@@ -227,8 +220,3 @@ class FilterTransformation(FlatMapTransformation):
 # is an empty dict for all the FilterTransformation. We can not make __init__
 # FilterTransformation as validated as we may use lambda function as the
 # argument
-@equals.register(FilterTransformation)
-def equals_filter_transformation(
-    this: FilterTransformation, that: FilterTransformation
-):
-    return this.condition.__code__.co_code == that.condition.__code__.co_code

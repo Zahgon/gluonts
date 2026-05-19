@@ -37,16 +37,10 @@ class QuantileOutput(Output):
     def forecast_generator(self) -> ForecastGenerator:
         return QuantileForecastGenerator(quantiles=self.quantiles)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
     def domain_map(self, *args: torch.Tensor) -> Tuple[torch.Tensor, ...]:
         return args
 
-    @property
-    def quantiles(self) -> List[float]:
-        return self._quantiles
 
     def loss(
         self,

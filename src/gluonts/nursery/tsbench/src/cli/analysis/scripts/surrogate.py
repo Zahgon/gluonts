@@ -26,38 +26,6 @@ from tsbench.surrogate import create_surrogate
 ex = Experiment()
 
 
-@ex.config
-def experiment_config():
-    # pylint: disable=unused-variable
-    experiment = "test"  # type: ignore
-    data_path = str(DEFAULT_DATA_PATH)  # type: ignore
-    evaluations_path = str(DEFAULT_EVALUATIONS_PATH)  # type: ignore
-    surrogate = "nonparametric"  # type: ignore
-
-    metrics = "ncrps_mean,latency_mean"  # type: ignore
-    inputs = {  # type: ignore
-        "use_simple_dataset_features": False,
-        "use_seasonal_naive_performance": False,
-        "use_catch22_features": False,
-    }
-    outputs = {  # type: ignore
-        "normalization": "quantile",
-        "imputation": False,
-    }
-
-    xgboost = {  # type: ignore
-        "objective": "regression",
-    }
-    autogluon = {  # type: ignore
-        "time_limit": 10,
-    }
-    mlp = {  # type: ignore
-        "objective": "ranking",
-        "discount": "linear",
-        "hidden_layer_sizes": [32, 32],
-        "weight_decay": 0.01,
-        "dropout": 0.0,
-    }
 
 
 @ex.automain

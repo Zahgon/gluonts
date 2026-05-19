@@ -47,13 +47,7 @@ class ParetoRecommender(Recommender[T]):
         super().__init__(objectives, focus, generator)
         self.surrogate = surrogate
 
-    @property
-    def required_cpus(self) -> int:
-        return self.surrogate.required_cpus
 
-    @property
-    def required_memory(self) -> int:
-        return self.surrogate.required_memory
 
     def fit(
         self, configs: List[Config[T]], performances: List[Performance]

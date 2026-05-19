@@ -93,27 +93,7 @@ class FeatureEmbedder(nn.HybridBlock):
             where C is the sum of the embedding dimensions for each categorical
             feature, i.e. C = sum(self.config.embedding_dims).
         """
-
-        if self.__num_features > 1:
-            # we slice the last dimension, giving an array of length
-            # self.__num_features with shape (N,T) or (N)
-            cat_feature_slices = F.split(
-                features, axis=-1, num_outputs=self.__num_features
-            )
-        else:
-            # F.split will iterate over the second-to-last axis if the last
-            # axis is one
-            cat_feature_slices = [features]
-
-        return F.concat(
-            *[
-                embed(F.squeeze(cat_feature_slice, axis=-1))
-                for embed, cat_feature_slice in zip(
-                    self.__embedders, cat_feature_slices
-                )
-            ],
-            dim=-1,
-        )
+        pass
 
 
 class FeatureAssembler(nn.HybridBlock):
@@ -233,22 +213,6 @@ class FeatureAssembler(nn.HybridBlock):
             lambda x: x
         )
 
-    def hybrid_forward(
-        self,
-        F,
-        feat_static_cat: Tensor,
-        feat_static_real: Tensor,
-        feat_dynamic_cat: Tensor,
-        feat_dynamic_real: Tensor,
-    ) -> Tensor:
-        processed_features = [
-            self.process_static_cat(F, feat_static_cat),
-            self.process_static_real(F, feat_static_real),
-            self.process_dynamic_cat(F, feat_dynamic_cat),
-            self.process_dynamic_real(F, feat_dynamic_real),
-        ]
-
-        return F.concat(*processed_features, dim=-1)
 
     def process_static_cat(self, F, feature: Tensor) -> Tensor:
         feature = self.embed_static(feature.astype(self.dtype))

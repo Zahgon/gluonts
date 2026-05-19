@@ -47,9 +47,6 @@ class NBEATSEnsemblePredictor(Predictor):
         self.predictors = predictors
         self.aggregation_method = aggregation_method
 
-    def set_aggregation_method(self, aggregation_method: str):
-        assert aggregation_method in AGGREGATION_METHODS
-        self.aggregation_method = aggregation_method
 
     def predict(
         self, dataset: Dataset, num_samples: Optional[int] = 1, **kwargs

@@ -55,12 +55,6 @@ class SinusoidalPositionalEmbedding(HybridBlock):
             )
         self.d_embed = d_embed
 
-    def hybrid_forward(self, F, pos_seq: Tensor) -> Tensor:
-        inv_freq = F.arange(0, self.d_embed, 2)
-        inv_freq = F.exp((inv_freq / self.d_embed) * -math.log(1e4))
-        pos_seq = F.reshape(data=pos_seq, shape=(0, 0, 1))
-        pos_seq = F.broadcast_mul(pos_seq, inv_freq)
-        return F.concat(F.sin(pos_seq), F.cos(pos_seq), dim=-1)
 
 
 class CausalConv1D(HybridBlock):
@@ -84,17 +78,6 @@ class CausalConv1D(HybridBlock):
                 weight_initializer=init.Xavier(),
             )
 
-    def hybrid_forward(self, F, x: Tensor, *args) -> Tensor:
-        pad = (
-            F.zeros_like(x)
-            .slice_axis(axis=1, begin=0, end=1)
-            .tile(reps=(1, self.kernel_size - 1, 1))
-        )
-        x = F.concat(pad, x, dim=1)
-        x = F.swapaxes(x, dim1=1, dim2=2)
-        x = self.net(x)
-        x = F.swapaxes(x, dim1=1, dim2=2)
-        return x
 
 
 class SelfAttention(HybridBlock):
@@ -369,20 +352,6 @@ class SelfAttention(HybridBlock):
         v = self.out_proj(v)
         return v
 
-    def hybrid_forward(
-        self,
-        F,
-        x: Tensor,
-        mask: Tensor,
-        _ctt_bias_weight: Optional[Tensor] = None,
-        _pos_bias_weight: Optional[Tensor] = None,
-    ) -> Tensor:
-        q, k, v = self._compute_qkv(F, x)
-        score = self._compute_attn_score(
-            F, q, k, mask, _ctt_bias_weight, _pos_bias_weight
-        )
-        v = self._compute_attn_output(F, score, v)
-        return v
 
 
 class PosFFN(HybridBlock):
@@ -415,15 +384,3 @@ class PosFFN(HybridBlock):
             )
             self.lnorm = nn.LayerNorm(axis=-1)
 
-    def hybrid_forward(self, F, x: Tensor) -> Tensor:
-        if self.pre_ln:
-            y = self.lnorm(x)
-        else:
-            y = x
-        y = self.linear1(y)
-        y = self.dropout(y)
-        y = self.linear2(y)
-        y = y + x
-        if not self.pre_ln:
-            y = self.lnorm(y)
-        return y

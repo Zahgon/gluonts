@@ -57,17 +57,6 @@ class DigitizeProp(mx.operator.CustomOpProp):
     def __init__(self):
         super().__init__(True)
 
-    def list_arguments(self):
-        return ["data", "bins"]
 
-    def list_outputs(self):
-        return ["output"]
 
-    def infer_shape(self, in_shapes):
-        data_shape = in_shapes[0]
-        bin_shape = in_shapes[1]
-        output_shape = data_shape
-        return (data_shape, bin_shape), (output_shape,), ()
 
-    def create_operator(self, ctx, in_shapes, in_dtypes):
-        return Digitize()

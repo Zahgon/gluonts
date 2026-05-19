@@ -83,30 +83,16 @@ class TimeBase:
     def pad(self, value, left: int = 0, right: int = 0) -> TimeBase:
         raise NotImplementedError
 
-    @property
-    def iloc(self):
-        return ILoc(self)
 
-    @property
-    def loc(self):
-        return TimeView(self)
 
     @property
     def start(self):
         return self.iloc[0]
 
-    @property
-    def end(self):
-        return self.iloc[-1]
 
     def head(self, count: int) -> Periods:
         return self.iloc[:count]
 
-    def tail(self, count: int) -> Periods:
-        if count is None:
-            return self
-
-        return self.iloc[-count:]
 
     def resize(
         self,
@@ -123,25 +109,7 @@ class TimeBase:
 
         By default we pad values on the left, and skip on the right.
         """
-        assert pad in ("l", "r")
-        assert skip in ("l", "r")
-
-        if length is None or len(self) == length:
-            return self
-
-        if len(self) < length:
-            left = right = 0
-            if pad == "l":
-                left = length - len(self)
-            else:
-                right = length - len(self)
-
-            return self.pad(pad_value, left=left, right=right)
-
-        if skip == "l":
-            return self.iloc[len(self) - length :]
-        else:
-            return self.iloc[: length - len(self)]
+        pass
 
     def index_of(self, period: Union[Period, str]) -> int:
         assert self.index is not None

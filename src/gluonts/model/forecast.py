@@ -276,8 +276,6 @@ class Forecast:
         """
         raise NotImplementedError()
 
-    def quantile_ts(self, q: Union[float, str]) -> pd.Series:
-        return pd.Series(index=self.index, data=self.quantile(q))
 
     @property
     def median(self) -> np.ndarray:
@@ -452,25 +450,20 @@ class SampleForecast(Forecast):
         ), "start_date should be a pandas Period object"
         self.start_date = start_date
 
-    @property
-    def _sorted_samples(self):
-        if self._sorted_samples_value is None:
-            self._sorted_samples_value = np.sort(self.samples, axis=0)
-        return self._sorted_samples_value
 
     @property
     def num_samples(self):
         """
         The number of samples representing the forecast.
         """
-        return self.samples.shape[0]
+        pass
 
     @property
     def prediction_length(self):
         """
         Time length of the forecast.
         """
-        return self.samples.shape[1]
+        pass
 
     @property
     def mean(self) -> np.ndarray:
@@ -487,43 +480,14 @@ class SampleForecast(Forecast):
         """
         Forecast mean, as a pandas.Series object.
         """
-        return pd.Series(self.mean, index=self.index)
+        pass
 
     def quantile(self, q: Union[float, str]) -> np.ndarray:
         q = Quantile.parse(q).value
         sample_idx = int(np.round((self.num_samples - 1) * q))
         return self._sorted_samples[sample_idx, :]
 
-    def copy_dim(self, dim: int) -> "SampleForecast":
-        if len(self.samples.shape) == 2:
-            samples = self.samples
-        else:
-            target_dim = self.samples.shape[2]
-            assert dim < target_dim, (
-                f"must set 0 <= dim < target_dim, but got dim={dim},"
-                f" target_dim={target_dim}"
-            )
-            samples = self.samples[:, :, dim]
 
-        return SampleForecast(
-            samples=samples,
-            start_date=self.start_date,
-            item_id=self.item_id,
-            info=self.info,
-        )
-
-    def copy_aggregate(self, agg_fun: Callable) -> "SampleForecast":
-        if len(self.samples.shape) == 2:
-            samples = self.samples
-        else:
-            # Aggregate over target dimension axis
-            samples = agg_fun(self.samples, axis=2)
-        return SampleForecast(
-            samples=samples,
-            start_date=self.start_date,
-            item_id=self.item_id,
-            info=self.info,
-        )
 
     def dim(self) -> int:
         if self._dim is None:
@@ -650,44 +614,7 @@ class QuantileForecast(Forecast):
                 inference_quantile,
             )
 
-    def copy_aggregate(self, agg_fun: Callable) -> "QuantileForecast":
-        if len(self.forecast_array.shape) == 2:
-            forecast_array = self.forecast_array
-        elif len(self.forecast_array.shape) == 3:
-            # Aggregate over target dimension axis
-            forecast_array = agg_fun(self.forecast_array, axis=2)
-        else:
-            raise ValueError(
-                "QuantileForecast.copy_aggregate expects forecast_array "
-                "to have rank 2 or 3, but got "
-                f"rank={len(self.forecast_array.shape)}"
-            )
-        return QuantileForecast(
-            forecast_arrays=forecast_array,
-            start_date=self.start_date,
-            forecast_keys=self.forecast_keys,
-            item_id=self.item_id,
-            info=self.info,
-        )
 
-    def copy_dim(self, dim: int) -> "QuantileForecast":
-        if len(self.forecast_array.shape) == 2:
-            forecast_array = self.forecast_array
-        else:
-            target_dim = self.forecast_array.shape[2]
-            assert dim < target_dim, (
-                f"must set 0 <= dim < target_dim, but got dim={dim},"
-                f" target_dim={target_dim}"
-            )
-            forecast_array = self.forecast_array[:, :, dim]
-
-        return QuantileForecast(
-            forecast_arrays=forecast_array,
-            start_date=self.start_date,
-            forecast_keys=self.forecast_keys,
-            item_id=self.item_id,
-            info=self.info,
-        )
 
     @property
     def mean(self) -> np.ndarray:

@@ -25,18 +25,6 @@ def encode_mx_context(v: mx.Context) -> Any:
     Specializes :func:`encode` for invocations where ``v`` is an instance of
     the :class:`~mxnet.Context` class.
     """
-    return {
-        "__kind__": Kind.Instance,
-        "class": fqname_for(v.__class__),
-        "args": encode([v.device_type, v.device_id]),
-    }
+    pass
 
 
-@encode.register(mx.nd.NDArray)
-def encode_mx_ndarray(v: mx.nd.NDArray) -> Any:
-    return {
-        "__kind__": Kind.Instance,
-        "class": "mxnet.nd.array",
-        "args": encode([v.asnumpy().tolist()]),
-        "kwargs": {"dtype": encode(v.dtype)},
-    }

@@ -47,46 +47,8 @@ class TemporalHierarchy:
 
         :return:
         """
-        num_nodes_running_sum = np.cumsum(self.num_nodes_per_level)
+        pass
 
-        # for 15-min hierarchy: [[1, 2], [3, 4, 5, 6]] (we ignore the root).
-        node_ix_level_wise = [
-            list(range(i, j))
-            for i, j in zip(
-                num_nodes_running_sum[:-1], num_nodes_running_sum[1:]
-            )
-        ]
-
-        dest_ix = []
-        for n, nodes_ix in zip(
-            self.num_nodes_per_level[:-1], node_ix_level_wise
-        ):
-            # split `node_ix` list into `n` equal parts;
-            # this relies on the definition of temporal hierarchy: equal splits during disaggregation!
-            # for 15-min hierarchy: [1, 2] --> [1, 2]; [3, 4, 5, 6] --> [3, 4], [5, 6]
-            dest_ix.extend(np.array_split(nodes_ix, n))
-
-        total_num_nodes = np.sum(self.num_nodes_per_level)
-        source_ix = list(range(total_num_nodes - self.num_leaves))
-
-        adj = np.zeros((total_num_nodes, total_num_nodes))
-        for s, t in zip(source_ix, dest_ix):
-            adj[s, t] = 1
-            adj[t, s] = 1
-
-        return adj
-
-    @property
-    def _hierarchical_adj_mat(self):
-        mat_accumulate = np.triu(self._adj_mat)
-        mat_distribute = np.tril(self._adj_mat)
-        col_sums = mat_distribute.sum(axis=0)
-        mat_distribute[:, col_sums > 0] = mat_distribute[
-            :, col_sums > 0
-        ] / mat_distribute[:, col_sums > 0].sum(axis=0, keepdims=True)
-        I = np.eye(mat_accumulate.shape[0])
-
-        return (mat_accumulate + mat_distribute + I) / 3.0
 
     def adj_mat(self, option: str = "hierarchical"):
         assert option in [
@@ -136,12 +98,6 @@ class TemporalHierarchy:
         if option == "hierarchical":
             return self._hierarchical_adj_mat
 
-    @property
-    def num_nodes_per_level(self):
-        return [
-            self.num_leaves // agg_multiple
-            for agg_multiple in self.agg_multiples
-        ]
 
     @property
     def nodes(self):
@@ -160,15 +116,7 @@ class TemporalHierarchy:
 
         :return:
         """
-        agg_multiples = np.array(self.agg_multiples)
-        num_children = agg_multiples[:-1] // agg_multiples[1:]
-        num_nodes_at_agg_levels = self.num_nodes_per_level[:-1]
-
-        nodes = [
-            [nc] * num_nodes if num_nodes > 1 else nc
-            for nc, num_nodes in zip(num_children, num_nodes_at_agg_levels)
-        ]
-        return nodes
+        pass
 
     @staticmethod
     def _get_agg_mat(agg_multiples: List[int]):
@@ -214,15 +162,6 @@ def to_TemporalHierarchy(freq_strs: List[str]) -> TemporalHierarchy:
     return TemporalHierarchy(agg_multiples=agg_multiples, freq_strs=freq_strs)
 
 
-def agg_series(seq: Tensor, agg_multiple: int):
-    batch_size, seq_length = seq.shape[0:2]
-
-    return seq.reshape(
-        batch_size,
-        seq_length // agg_multiple,
-        agg_multiple,
-        -1,
-    ).sum(axis=2)
 
 
 def unpack_forecasts(

@@ -91,12 +91,7 @@ class ConfigTransformer(TransformerMixin):
         Returns the feature names for the columns of transformed
         configurations.
         """
-        return [
-            f
-            for e in self.encoders
-            for f in e.feature_names_
-            if isinstance(e, Encoder)
-        ]
+        pass
 
     def fit(self, X: list[Config[ModelConfig]]) -> ConfigTransformer:
         """
@@ -145,9 +140,7 @@ class EnsembleConfigTransformer(TransformerMixin):
         Returns the feature names for the columns of transformed
         configurations.
         """
-        return [f"model={m}" for m in self.model_type_map] + list(
-            self.attribute_map.keys()
-        )
+        pass
 
     def fit(
         self, X: list[Config[EnsembleConfig]]
@@ -309,12 +302,6 @@ class ModelEncoder(Encoder):
             ),
         )
 
-    @property
-    def feature_names_(self) -> list[str]:
-        return (
-            self.model_vectorizer.feature_names_
-            + self.hp_vectorizer.feature_names_
-        )
 
     def fit(
         self,
@@ -373,12 +360,6 @@ class DatasetStatisticsEncoder(Encoder):
             ),
         )
 
-    @property
-    def feature_names_(self) -> list[str]:
-        return (
-            self.unscaled_vectorizer.feature_names_
-            + self.scaled_vectorizer.feature_names_
-        )
 
     def fit(
         self, X: list[Config[ModelConfig]], _y: Any = None
@@ -409,9 +390,6 @@ class SeasonalNaivePerformanceEncoder(Encoder):
         self.tracker = tracker
         self.scaler = StandardScaler()
 
-    @property
-    def feature_names_(self) -> list[str]:
-        return ["seasonal_naive_ncrps"]
 
     def fit(
         self, X: list[Config[ModelConfig]], _y: Any = None
@@ -450,9 +428,6 @@ class DatasetCatch22Encoder(Encoder):
             PowerTransformer(),
         )
 
-    @property
-    def feature_names_(self) -> list[str]:
-        return self.vectorizer.feature_names_
 
     def fit(
         self, X: list[Config[ModelConfig]], _y: Any = None

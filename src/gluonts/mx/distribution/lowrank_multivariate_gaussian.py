@@ -214,17 +214,8 @@ class LowrankMultivariateGaussian(Distribution):
     def F(self):
         return getF(self.mu)
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.mu.shape[:-1]
 
-    @property
-    def event_shape(self) -> Tuple:
-        return self.mu.shape[-1:]
 
-    @property
-    def event_dim(self) -> int:
-        return 1
 
     def log_prob(self, x: Tensor) -> Tensor:
         return lowrank_log_likelihood(
@@ -235,23 +226,6 @@ class LowrankMultivariateGaussian(Distribution):
     def mean(self) -> Tensor:
         return self.mu
 
-    @property
-    def variance(self) -> Tensor:
-        assert self.dim is not None
-        F = self.F
-
-        if self.Cov is not None:
-            return self.Cov
-        # reshape to a matrix form (..., d, d)
-        D_matrix = self.D.expand_dims(-1) * F.eye(self.dim)
-
-        if self.W is not None:
-            W_matrix = F.linalg_gemm2(self.W, self.W, transpose_b=True)
-            self.Cov = D_matrix + W_matrix
-        else:
-            self.Cov = D_matrix
-
-        return self.Cov
 
     def sample_rep(
         self, num_samples: Optional[int] = None, dtype=np.float32
@@ -276,35 +250,6 @@ class LowrankMultivariateGaussian(Distribution):
             tensor with shape (num_samples, ..., dim)
         """
 
-        def s(mu: Tensor, D: Tensor, W: Optional[Tensor] = None) -> Tensor:
-            F = getF(mu)
-
-            samples_D = F.sample_normal(
-                mu=F.zeros_like(mu), sigma=F.ones_like(mu), dtype=dtype
-            )
-            cov_D = D.sqrt() * samples_D
-
-            if W is not None:
-                # dummy only use to get the shape (..., rank, 1)
-                dummy_tensor = F.linalg_gemm2(
-                    W, mu.expand_dims(axis=-1), transpose_a=True
-                ).squeeze(axis=-1)
-
-                samples_W = F.sample_normal(
-                    mu=F.zeros_like(dummy_tensor),
-                    sigma=F.ones_like(dummy_tensor),
-                    dtype=dtype,
-                )
-
-                cov_W = F.linalg_gemm2(
-                    W, samples_W.expand_dims(axis=-1)
-                ).squeeze(axis=-1)
-
-                samples = mu + cov_D + cov_W
-            else:
-                samples = mu + cov_D
-
-            return samples
 
         return _sample_multiple(
             s, mu=self.mu, D=self.D, W=self.W, num_samples=num_samples
@@ -430,6 +375,3 @@ class LowrankMultivariateGaussianOutput(DistributionOutput):
             )
             return mu_vector + self.mu_bias, D_diag, W_matrix
 
-    @property
-    def event_shape(self) -> Tuple:
-        return (self.dim,)

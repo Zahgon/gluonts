@@ -31,24 +31,6 @@ from gluonts.time_feature import (
 )
 
 
-def _make_block_diagonal(blocks: Sequence[Tensor]) -> Tensor:
-    assert (
-        len(blocks) > 0
-    ), "You need at least one tensor to make a block-diagonal tensor"
-
-    if len(blocks) == 1:
-        return blocks[0]
-
-    F = getF(blocks[0])
-
-    # transition coefficient is block diagonal!
-    block_diagonal = _make_2_block_diagonal(F, blocks[0], blocks[1])
-    for i in range(2, len(blocks)):
-        block_diagonal = _make_2_block_diagonal(
-            F=F, left=block_diagonal, right=blocks[i]
-        )
-
-    return block_diagonal
 
 
 def _make_2_block_diagonal(F, left: Tensor, right: Tensor) -> Tensor:
@@ -68,27 +50,7 @@ def _make_2_block_diagonal(F, left: Tensor, right: Tensor) -> Tensor:
     Tensor
         Block diagonal matrix of shape (batch_size, seq_length, m+n, m+n)
     """
-    # shape (batch_size, seq_length, m, n)
-    zeros_off_diag = F.broadcast_add(
-        left.slice_axis(
-            axis=-1, begin=0, end=1
-        ).zeros_like(),  # shape (batch_size, seq_length, m, 1)
-        right.slice_axis(
-            axis=-2, begin=0, end=1
-        ).zeros_like(),  # shape (batch_size, seq_length, 1, n)
-    )
-
-    # shape (batch_size, n, m)
-    zeros_off_diag_tr = zeros_off_diag.swapaxes(2, 3)
-
-    # block diagonal: shape (batch_size, seq_length, m+n, m+n)
-    _block_diagonal = F.concat(
-        F.concat(left, zeros_off_diag, dim=3),
-        F.concat(zeros_off_diag_tr, right, dim=3),
-        dim=2,
-    )
-
-    return _block_diagonal
+    pass
 
 
 class ISSM:
@@ -125,14 +87,6 @@ class ISSM:
     def innovation_coeff(self, features: Tensor) -> Tensor:
         raise NotImplementedError
 
-    def get_issm_coeff(
-        self, features: Tensor
-    ) -> Tuple[Tensor, Tensor, Tensor]:
-        return (
-            self.emission_coeff(features),
-            self.transition_coeff(features),
-            self.innovation_coeff(features),
-        )
 
 
 class LevelISSM(ISSM):
@@ -145,45 +99,8 @@ class LevelISSM(ISSM):
     def time_features(self) -> List[TimeFeature]:
         return [ZeroFeature()]
 
-    def emission_coeff(
-        self, feature: Tensor  # (batch_size, time_length, 1)
-    ) -> Tensor:
-        F = getF(feature)
 
-        _emission_coeff = F.ones(shape=(1, 1, 1, self.latent_dim()))
 
-        # get the right shape: (batch_size, time_length, obs_dim, latent_dim)
-        zeros = _broadcast_param(
-            feature.squeeze(axis=2),
-            axes=[2, 3],
-            sizes=[1, self.latent_dim()],
-        )
-
-        return _emission_coeff.broadcast_like(zeros)
-
-    def transition_coeff(
-        self, feature: Tensor  # (batch_size, time_length, 1)
-    ) -> Tensor:
-        F = getF(feature)
-
-        _transition_coeff = (
-            F.eye(self.latent_dim()).expand_dims(axis=0).expand_dims(axis=0)
-        )
-
-        # get the right shape: (batch_size, time_length, latent_dim,
-        # latent_dim)
-        zeros = _broadcast_param(
-            feature.squeeze(axis=2),
-            axes=[2, 3],
-            sizes=[self.latent_dim(), self.latent_dim()],
-        )
-
-        return _transition_coeff.broadcast_like(zeros)
-
-    def innovation_coeff(
-        self, feature: Tensor  # (batch_size, time_length, 1)
-    ) -> Tensor:
-        return self.emission_coeff(feature).squeeze(axis=2)
 
 
 class LevelTrendISSM(LevelISSM):
@@ -196,26 +113,6 @@ class LevelTrendISSM(LevelISSM):
     def time_features(self) -> List[TimeFeature]:
         return [ZeroFeature()]
 
-    def transition_coeff(
-        self, feature: Tensor  # (batch_size, time_length, 1)
-    ) -> Tensor:
-        F = getF(feature)
-
-        _transition_coeff = (
-            (F.diag(F.ones(shape=(2,)), k=0) + F.diag(F.ones(shape=(1,)), k=1))
-            .expand_dims(axis=0)
-            .expand_dims(axis=0)
-        )
-
-        # get the right shape: (batch_size, time_length, latent_dim,
-        # latent_dim)
-        zeros = _broadcast_param(
-            feature.squeeze(axis=2),
-            axes=[2, 3],
-            sizes=[self.latent_dim(), self.latent_dim()],
-        )
-
-        return _transition_coeff.broadcast_like(zeros)
 
 
 class SeasonalityISSM(LevelISSM):
@@ -239,13 +136,7 @@ class SeasonalityISSM(LevelISSM):
     def time_features(self) -> List[TimeFeature]:
         return [self.time_feature]
 
-    def emission_coeff(self, feature: Tensor) -> Tensor:
-        F = getF(feature)
-        return F.one_hot(feature, depth=self.latent_dim())
 
-    def innovation_coeff(self, feature: Tensor) -> Tensor:
-        F = getF(feature)
-        return F.one_hot(feature, depth=self.latent_dim()).squeeze(axis=2)
 
 
 def MonthOfYearSeasonalISSM():
@@ -327,27 +218,3 @@ class CompositeISSM(ISSM):
 
         return cls(seasonal_issms=seasonal_issms, add_trend=add_trend)
 
-    def get_issm_coeff(
-        self, features: Tensor  # (batch_size, time_length, num_features)
-    ) -> Tuple[Tensor, Tensor, Tensor]:
-        F = getF(features)
-        emission_coeff_ls, transition_coeff_ls, innovation_coeff_ls = zip(
-            *[
-                issm.get_issm_coeff(
-                    features.slice_axis(axis=-1, begin=ix, end=ix + 1)
-                )
-                for ix, issm in enumerate(
-                    [self.nonseasonal_issm] + self.seasonal_issms
-                )
-            ],
-        )
-
-        # stack emission and innovation coefficients
-        emission_coeff = F.concat(*emission_coeff_ls, dim=-1)
-
-        innovation_coeff = F.concat(*innovation_coeff_ls, dim=-1)
-
-        # transition coefficient is block diagonal!
-        transition_coeff = _make_block_diagonal(transition_coeff_ls)
-
-        return emission_coeff, transition_coeff, innovation_coeff

@@ -182,17 +182,8 @@ class LDS(Distribution):
     def F(self):
         return getF(self.prior_mean)
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.emission_coeff[0].shape[:1] + (self.seq_length,)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return (self.output_dim,)
 
-    @property
-    def event_dim(self) -> int:
-        return 2
 
     def log_prob(
         self,
@@ -487,61 +478,7 @@ class LDS(Distribution):
         Tensor
             Samples, shape (num_samples, batch_size, seq_length, output_dim)
         """
-        F = self.F
-
-        state_mean = self.prior_mean.expand_dims(axis=-1)
-        state_cov = self.prior_cov
-
-        output_mean_seq = []
-        output_cov_seq = []
-
-        for t in range(self.seq_length):
-            # compute and store observation mean at time t
-            output_mean = F.linalg_gemm2(
-                self.emission_coeff[t], state_mean
-            ) + self.residuals[t].expand_dims(axis=-1)
-
-            output_mean_seq.append(output_mean)
-
-            # compute and store observation cov at time t
-            output_cov = F.linalg_gemm2(
-                self.emission_coeff[t],
-                F.linalg_gemm2(
-                    state_cov, self.emission_coeff[t], transpose_b=True
-                ),
-            ) + make_nd_diag(
-                F=F, x=self.noise_std[t] * self.noise_std[t], d=self.output_dim
-            )
-
-            output_cov_seq.append(output_cov.expand_dims(axis=1))
-
-            state_mean = F.linalg_gemm2(self.transition_coeff[t], state_mean)
-
-            state_cov = F.linalg_gemm2(
-                self.transition_coeff[t],
-                F.linalg_gemm2(
-                    state_cov, self.transition_coeff[t], transpose_b=True
-                ),
-            ) + F.linalg_gemm2(
-                self.innovation_coeff[t],
-                self.innovation_coeff[t],
-                transpose_a=True,
-            )
-
-        output_mean = F.concat(*output_mean_seq, dim=1)
-        output_cov = F.concat(*output_cov_seq, dim=1)
-
-        L = F.linalg_potrf(output_cov)
-
-        output_distribution = MultivariateGaussian(output_mean, L)
-
-        samples = output_distribution.sample(num_samples=num_samples)
-
-        return (
-            samples
-            if scale is None
-            else F.broadcast_mul(samples, scale.expand_dims(axis=1))
-        )
+        pass
 
 
 class LDSArgsProj(mx.gluon.HybridBlock):
@@ -566,22 +503,6 @@ class LDSArgsProj(mx.gluon.HybridBlock):
         self.innovation_bounds = innovation_bounds
         self.noise_std_bounds = noise_std_bounds
 
-    def hybrid_forward(self, F, x: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
-        noise_std = (
-            self.dense_noise_std(x)
-            * (self.noise_std_bounds.upper - self.noise_std_bounds.lower)
-            + self.noise_std_bounds.lower
-        )
-
-        innovation = (
-            self.dense_innovation(x)
-            * (self.innovation_bounds.upper - self.innovation_bounds.lower)
-            + self.innovation_bounds.lower
-        )
-
-        residual = self.dense_residual(x)
-
-        return noise_std, innovation, residual
 
 
 def kalman_filter_step(

@@ -92,24 +92,8 @@ class AttentionEstimator(nn.Module):
             [AttentionBlock(*ms) for ms in zip(*modules)]
         )
 
-    @property
-    def tradeoff(self) -> Tensor:
-        return self._softplus(self._tradeoff)
 
-    @property
-    def n_layer(self) -> int:
-        return len(self.blocks)
 
-    @property
-    def tie_layers(self) -> bool:
-        return (self.n_layer == 1) or (
-            all(
-                [
-                    (a.encoder is b.encoder) and (a.decoder is b.decoder)
-                    for a, b in product(self.blocks[:1], self.blocks[1:])
-                ]
-            )
-        )
 
     def register_loss_func(self, func: LossFunction) -> None:
         if not isinstance(func, LossFunction):
@@ -475,9 +459,6 @@ class AdversarialEstimator(AttentionEstimator):
         for n, p in self.discriminative_named_parameters():
             yield p
 
-    @property
-    def prob_domain(self) -> Tensor:
-        return pt.stack([block.prob_domain for block in self.blocks], dim=2)
 
     @classmethod
     def from_configs(

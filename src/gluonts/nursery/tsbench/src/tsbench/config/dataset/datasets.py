@@ -39,13 +39,7 @@ class ExchangeRateDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "exchange_rate"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
-    @property
-    def _gluonts_name(self) -> str:
-        return "exchange_rate_nips"
 
 
 @register_dataset
@@ -59,9 +53,6 @@ class ElectricityDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "electricity"
 
-    @property
-    def max_training_time(self) -> int:
-        return 14400
 
 
 @register_dataset
@@ -75,13 +66,7 @@ class SolarDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "solar"
 
-    @property
-    def max_training_time(self) -> int:
-        return 7200
 
-    @property
-    def _gluonts_name(self) -> str:
-        return "solar_nips"
 
 
 @register_dataset
@@ -95,13 +80,7 @@ class WikiDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "wiki"
 
-    @property
-    def max_training_time(self) -> int:
-        return 14400
 
-    @property
-    def _gluonts_name(self) -> str:
-        return "wiki-rolling_nips"
 
 
 @register_dataset
@@ -115,13 +94,7 @@ class TaxiDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "taxi"
 
-    @property
-    def max_training_time(self) -> int:
-        return 14400
 
-    @property
-    def _gluonts_name(self) -> str:
-        return "taxi_30min"
 
 
 @register_dataset
@@ -135,9 +108,6 @@ class M3MonthlyDatasetConfig(M3DatasetConfig):
     def name(cls) -> str:
         return "m3_monthly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 7200
 
 
 @register_dataset
@@ -151,9 +121,6 @@ class M3QuarterlyDatasetConfig(M3DatasetConfig):
     def name(cls) -> str:
         return "m3_quarterly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
 
 @register_dataset
@@ -167,9 +134,6 @@ class M3YearlyDatasetConfig(M3DatasetConfig):
     def name(cls) -> str:
         return "m3_yearly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
 
 @register_dataset
@@ -183,13 +147,7 @@ class M3OtherDatasetConfig(M3DatasetConfig):
     def name(cls) -> str:
         return "m3_other"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
-    @property
-    def has_time_features(self) -> bool:
-        return False
 
 
 @register_dataset
@@ -203,13 +161,7 @@ class M4HourlyDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "m4_hourly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 7200
 
-    @property
-    def has_time_features(self) -> bool:
-        return False
 
 
 @register_dataset
@@ -223,13 +175,7 @@ class M4DailyDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "m4_daily"
 
-    @property
-    def max_training_time(self) -> int:
-        return 14400
 
-    @property
-    def has_time_features(self) -> bool:
-        return False
 
 
 @register_dataset
@@ -243,13 +189,7 @@ class M4WeeklyDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "m4_weekly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 7200
 
-    @property
-    def has_time_features(self) -> bool:
-        return False
 
 
 @register_dataset
@@ -263,13 +203,7 @@ class M4MonthlyDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "m4_monthly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 28800
 
-    @property
-    def has_time_features(self) -> bool:
-        return False
 
 
 @register_dataset
@@ -283,13 +217,7 @@ class M4QuarterlyDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "m4_quarterly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 14400
 
-    @property
-    def has_time_features(self) -> bool:
-        return False
 
 
 @register_dataset
@@ -303,13 +231,7 @@ class M4YearlyDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "m4_yearly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 7200
 
-    @property
-    def has_time_features(self) -> bool:
-        return False
 
 
 @register_dataset
@@ -323,9 +245,6 @@ class M5DatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "m5"
 
-    @property
-    def max_training_time(self) -> int:
-        return 28800
 
     def _materialize(self, directory: Path, regenerate: bool = False) -> None:
         shutil.copytree(
@@ -346,9 +265,6 @@ class TourismMonthlyDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "tourism_monthly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 7200
 
 
 @register_dataset
@@ -362,9 +278,6 @@ class TourismQuarterlyDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "tourism_quarterly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
 
 @register_dataset
@@ -378,9 +291,6 @@ class TourismYearlyDatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "tourism_yearly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
 
 @register_dataset
@@ -394,13 +304,7 @@ class NN5DatasetConfig(GluonTsDatasetConfig):
     def name(cls) -> str:
         return "nn5"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
-    @property
-    def _gluonts_name(self) -> str:
-        return "nn5_daily_without_missing"
 
 
 @register_dataset
@@ -414,21 +318,9 @@ class LondonSmartMetersDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "london_smart_meters"
 
-    @property
-    def max_training_time(self) -> int:
-        return 28800
 
-    @property
-    def _file(self) -> str:
-        return "london_smart_meters_dataset_without_missing_values.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4656091"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 48
 
 
 @register_dataset
@@ -442,26 +334,14 @@ class WindFarmsDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "wind_farms"
 
-    @property
-    def max_training_time(self) -> int:
-        return 28800
 
     def _filters(self, prediction_length: int) -> List[Filter]:
         return [
             ConstantTargetFilter(prediction_length, required_length=100000)
         ]
 
-    @property
-    def _file(self) -> str:
-        return "wind_farms_minutely_dataset_without_missing_values.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4654858"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 60
 
 
 @register_dataset
@@ -475,21 +355,9 @@ class CarPartsDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "car_parts"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
-    @property
-    def _file(self) -> str:
-        return "car_parts_dataset_without_missing_values.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4656021"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 12
 
 
 @register_dataset
@@ -503,29 +371,11 @@ class DominickDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "dominick"
 
-    @property
-    def max_training_time(self) -> int:
-        return 28800
 
-    @property
-    def has_time_features(self) -> bool:
-        return False
 
-    @property
-    def _file(self) -> str:
-        return "dominick_dataset.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4654802"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 8
 
-    @property
-    def _prediction_length_multiplier(self) -> int:
-        return 1
 
 
 @register_dataset
@@ -539,21 +389,9 @@ class FredMdDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "fred_md"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
-    @property
-    def _file(self) -> str:
-        return "fred_md_dataset.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4654833"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 12
 
 
 @register_dataset
@@ -567,21 +405,9 @@ class SanFranciscoTrafficDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "san_francisco_traffic"
 
-    @property
-    def max_training_time(self) -> int:
-        return 28800
 
-    @property
-    def _file(self) -> str:
-        return "traffic_hourly_dataset.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4656132"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 48
 
 
 @register_dataset
@@ -595,21 +421,9 @@ class PedestrianCountDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "pedestrian_count"
 
-    @property
-    def max_training_time(self) -> int:
-        return 14400
 
-    @property
-    def _file(self) -> str:
-        return "pedestrian_counts_dataset.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4656626"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 48
 
 
 @register_dataset
@@ -623,21 +437,9 @@ class HospitalDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "hospital"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
-    @property
-    def _file(self) -> str:
-        return "hospital_dataset.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4656014"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 12
 
 
 @register_dataset
@@ -651,21 +453,9 @@ class CovidDeathsDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "covid_deaths"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
-    @property
-    def _file(self) -> str:
-        return "covid_deaths_dataset.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4656009"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 30
 
 
 @register_dataset
@@ -679,21 +469,9 @@ class KddCupDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "kdd_2018"
 
-    @property
-    def max_training_time(self) -> int:
-        return 14400
 
-    @property
-    def _file(self) -> str:
-        return "kdd_cup_2018_dataset_without_missing_values.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4656756"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 48
 
 
 @register_dataset
@@ -707,25 +485,10 @@ class CifDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "cif_2016"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
-    @property
-    def has_time_features(self) -> bool:
-        return False
 
-    @property
-    def _file(self) -> str:
-        return "cif_2016_dataset.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4656042"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 12
 
 
 @register_dataset
@@ -739,21 +502,9 @@ class AustralianElectricityDemandDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "australian_electricity_demand"
 
-    @property
-    def max_training_time(self) -> int:
-        return 14400
 
-    @property
-    def _file(self) -> str:
-        return "australian_electricity_demand_dataset.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4659727"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 48
 
 
 @register_dataset
@@ -767,21 +518,9 @@ class BitcoinDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "bitcoin"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
-    @property
-    def _file(self) -> str:
-        return "bitcoin_dataset_without_missing_values.zip"
 
-    @property
-    def _record(self) -> str:
-        return "5122101"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 30
 
 
 @register_dataset
@@ -795,21 +534,9 @@ class RideshareDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "rideshare"
 
-    @property
-    def max_training_time(self) -> int:
-        return 14400
 
-    @property
-    def _file(self) -> str:
-        return "rideshare_dataset_without_missing_values.zip"
 
-    @property
-    def _record(self) -> str:
-        return "5122232"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 48
 
 
 @register_dataset
@@ -823,25 +550,10 @@ class VehicleTripsDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "vehicle_trips"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
-    @property
-    def _file(self) -> str:
-        return "vehicle_trips_dataset_without_missing_values.zip"
 
-    @property
-    def _record(self) -> str:
-        return "5122537"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 30
 
-    @property
-    def _prediction_length_multiplier(self) -> int:
-        return 1
 
 
 @register_dataset
@@ -855,21 +567,9 @@ class WeatherDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "weather"
 
-    @property
-    def max_training_time(self) -> int:
-        return 28800
 
-    @property
-    def _file(self) -> str:
-        return "weather_dataset.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4654822"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 30
 
 
 @register_dataset
@@ -883,21 +583,9 @@ class TemperatureRainDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "temperature_rain"
 
-    @property
-    def max_training_time(self) -> int:
-        return 28800
 
-    @property
-    def _file(self) -> str:
-        return "temperature_rain_dataset_without_missing_values.zip"
 
-    @property
-    def _record(self) -> str:
-        return "5129091"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 30
 
 
 @register_dataset
@@ -911,21 +599,9 @@ class M1YearlyDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "m1_yearly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
-    @property
-    def _file(self) -> str:
-        return "m1_yearly_dataset.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4656193"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 6
 
 
 @register_dataset
@@ -939,21 +615,9 @@ class M1QuarterlyDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "m1_quarterly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
-    @property
-    def _file(self) -> str:
-        return "m1_quarterly_dataset.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4656154"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 8
 
 
 @register_dataset
@@ -967,21 +631,9 @@ class M1MonthlyDatasetConfig(MonashDatasetConfig):
     def name(cls) -> str:
         return "m1_monthly"
 
-    @property
-    def max_training_time(self) -> int:
-        return 3600
 
-    @property
-    def _file(self) -> str:
-        return "m1_monthly_dataset.zip"
 
-    @property
-    def _record(self) -> str:
-        return "4656159"
 
-    @property
-    def _prediction_length(self) -> int:
-        return 18
 
 
 @register_dataset
@@ -996,13 +648,7 @@ class RossmannDatasetConfig(KaggleDatasetConfig):
     def name(cls) -> str:
         return "rossmann"
 
-    @property
-    def max_training_time(self) -> int:
-        return 7200
 
-    @property
-    def _link(self) -> str:
-        return "https://www.kaggle.com/c/rossmann-store-sales"
 
     def _extract_data(
         self, path: Path
@@ -1052,13 +698,7 @@ class CorporacionFavoritaDatasetConfig(KaggleDatasetConfig):
     def name(cls) -> str:
         return "corporacion_favorita"
 
-    @property
-    def max_training_time(self) -> int:
-        return 28800
 
-    @property
-    def _link(self) -> str:
-        return "https://www.kaggle.com/c/favorita-grocery-sales-forecasting"
 
     def _extract_data(
         self, path: Path
@@ -1123,13 +763,7 @@ class WalmartDatasetConfig(KaggleDatasetConfig):
     def name(cls) -> str:
         return "walmart"
 
-    @property
-    def max_training_time(self) -> int:
-        return 7200
 
-    @property
-    def _link(self) -> str:
-        return "https://www.kaggle.com/c/walmart-recruiting-store-sales-forecasting"
 
     def _extract_data(
         self, path: Path
@@ -1189,15 +823,7 @@ class RestaurantDatasetConfig(KaggleDatasetConfig):
     def name(cls) -> str:
         return "restaurant"
 
-    @property
-    def max_training_time(self) -> int:
-        return 7200
 
-    @property
-    def _link(self) -> str:
-        return (
-            "https://www.kaggle.com/c/recruit-restaurant-visitor-forecasting"
-        )
 
     def _extract_data(
         self, path: Path

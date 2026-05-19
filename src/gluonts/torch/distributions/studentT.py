@@ -51,13 +51,6 @@ class StudentT(TorchStudentT):
         result = self.scipy_student_t.ppf(value.detach().cpu().numpy())
         return torch.tensor(result, device=value.device, dtype=value.dtype)
 
-    @lazy_property
-    def scipy_student_t(self):
-        return ScipyStudentT(
-            df=self.df.detach().cpu().numpy(),
-            loc=self.loc.detach().cpu().numpy(),
-            scale=self.scale.detach().cpu().numpy(),
-        )
 
 
 class StudentTOutput(DistributionOutput):
@@ -73,6 +66,3 @@ class StudentTOutput(DistributionOutput):
         df = 2.0 + F.softplus(df)
         return df.squeeze(-1), loc.squeeze(-1), scale.squeeze(-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

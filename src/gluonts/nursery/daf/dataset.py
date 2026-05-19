@@ -40,71 +40,10 @@ from data import (
 )
 
 
-def _tensor_collator(batch: List[Tensor]):
-    elem = batch[0]
-    lengths = [t.size(0) for t in batch]
-    max_length = max(lengths)
-    pad_size = [max_length - l for l in lengths]
-
-    storage = elem.storage()._new_shared(
-        len(batch) * max_length * elem[0].numel()
-    )
-    out = elem.new(storage)
-    if max(pad_size) == 0:
-        tensor = pt.stack(batch, dim=0, out=out)
-        lengths = None
-    else:
-        # shorter sequences are padded at left
-        tensor = pt.stack(
-            [
-                pt.cat(
-                    [sample.new_zeros(pad, *sample.shape[1:]), sample], dim=0
-                )
-                for pad, sample in zip(pad_size, batch)
-            ],
-            dim=0,
-            out=out,
-        )
-        lengths = tensor.new_tensor(lengths, dtype=pt.long)
-    return tensor, lengths
 
 
-def _variable_length_collator(batch: List[Tuple]):
-    data, feats, nan_mask = zip(*batch)
-    data, length = _tensor_collator(data)
-    if feats[0] is not None:
-        feats, _ = _tensor_collator(feats)
-    else:
-        feats = None
-    if nan_mask[0] is not None:
-        nan_mask, _ = _tensor_collator(nan_mask)
-    else:
-        nan_mask = None
-    return data, feats, nan_mask, length
 
 
-def _pair_variable_length_collator(batch: List[Tuple]):
-    (
-        src_data,
-        tgt_data,
-        src_feats,
-        tgt_feats,
-        src_nan_mask,
-        tgt_nan_mask,
-    ) = zip(*batch)
-    if src_data[0] is None:
-        src_input = (None, None, None, None)
-    else:
-        src_input = _variable_length_collator(
-            list(zip(src_data, src_feats, src_nan_mask))
-        )
-    if tgt_data[0] is None:
-        tgt_input = (None, None, None, None)
-    else:
-        tgt_input = _variable_length_collator(
-            list(zip(tgt_data, tgt_feats, tgt_nan_mask))
-        )
-    return sum(zip(src_input, tgt_input), ())
 
 
 class DomAdaptDataset(TorchDataset):
@@ -195,13 +134,7 @@ class SeasonalDataset(WindowsDataset, SeasonalReader):
         data = pt.tensor(ts.target, dtype=pt.float)
         return (data,)
 
-    @property
-    def d_data(self) -> int:
-        return 1
 
-    @property
-    def d_feats(self) -> int:
-        return 0
 
     @classmethod
     def full_windows(cls, corpus: TimeSeriesCorpus):
@@ -277,15 +210,7 @@ class BenchmarkDataset(WindowsDataset, GluonTSJsonReader):
 
         return target, feats, nan_mask
 
-    @property
-    def d_data(self) -> int:
-        return 1
 
-    @property
-    def d_feats(self) -> int:
-        instance = self.corpus.instances[0]
-        keys = instance.revealed_numerical_features.keys()
-        return sum(instance._features[k].shape[-1] for k in keys)
 
     @classmethod
     def create_dataset(

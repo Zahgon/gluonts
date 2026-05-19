@@ -88,14 +88,14 @@ class TrainingJob:
         """
         Returns the status of the training job.
         """
-        return self.info["TrainingJobStatus"]
+        pass
 
     @property
     def date_created(self) -> datetime.datetime:
         """
         Returns the date and time when the training job was created.
         """
-        return self.info["CreationTime"]
+        pass
 
     @property
     def hyperparameters(self) -> dict[str, Any]:
@@ -115,52 +115,14 @@ class TrainingJob:
         Pulls the training job's logs such that subsequent accesses to the
         `logs` property are noops.
         """
-        # Check if the logs are already available locally
-        log_file = self._cache_dir() / "logs.txt"
-        if log_file.exists():
-            with log_file.open("r") as f:
-                return f.read().split("\n")
-
-        # If not, fetch them
-        client = default_session().client("logs")
-        streams = client.describe_log_streams(
-            logGroupName="/aws/sagemaker/TrainingJobs",
-            logStreamNamePrefix=self.info["TrainingJobName"],
-        )
-        res = []
-        for stream in streams["logStreams"]:
-            params = {
-                "logGroupName": "/aws/sagemaker/TrainingJobs",
-                "logStreamName": stream["logStreamName"],
-                "startFromHead": True,
-            }
-            result = client.get_log_events(**params)
-            res.extend([event["message"] for event in result["events"]])
-            while "nextForwardToken" in result:
-                next_token = result["nextForwardToken"]
-                result = client.get_log_events(nextToken=next_token, **params)
-                if result["nextForwardToken"] == next_token:
-                    # The same token as before indicates end of stream, see
-                    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/logs.html#CloudWatchLogs.Client.get_log_events
-                    break
-                res.extend([event["message"] for event in result["events"]])
-
-        # Store them
-        log_file.parent.mkdir(parents=True, exist_ok=True)
-        with log_file.open("w") as f:
-            f.write("\n".join(res))
-
-        # And return them
-        return res
+        pass
 
     @property
     def logs(self) -> list[str]:
         """
         Retrieves the logs emitted by this training job.
         """
-        # We can't put the `pull_logs` code here directly since `cached_property` seems to be CPU-
-        # bound for some odd reason.
-        return self.pull_logs()
+        pass
 
     @cached_property
     def metrics(self) -> dict[str, np.ndarray]:
@@ -242,37 +204,13 @@ class TrainingJob:
         """
         Updates the experiment tag to the provided name.
         """
-        client = default_session().client("sagemaker")
-        client.add_tags(
-            ResourceArn=self.info["TrainingJobArn"],
-            Tags=[{"Key": "Experiment", "Value": experiment}],
-        )
+        pass
 
     def delete(self) -> None:
         """
         Deletes the training job by removing all tags associated with it.
         """
-        client = default_session().client("sagemaker")
-
-        existing_tags = client.list_tags(
-            ResourceArn=self.info["TrainingJobArn"],
-            MaxResults=100,
-        )
-        experiment = [
-            t["Value"]
-            for t in existing_tags["Tags"]
-            if t["Key"] == "Experiment"
-        ][0]
-
-        client.add_tags(
-            ResourceArn=self.info["TrainingJobArn"],
-            Tags=[{"Key": "OriginalExperiment", "Value": experiment}],
-        )
-
-        client.delete_tags(
-            ResourceArn=self.info["TrainingJobArn"],
-            TagKeys=["Experiment"],
-        )
+        pass
 
     def __repr__(self) -> str:
         return f"TrainingJob(name={self.info['TrainingJobName']})"
@@ -342,8 +280,7 @@ class Analysis:
         """
         Returns the aggregate statistics about the status of all jobs.
         """
-        c = Counter([t.status for t in self.map.values()])
-        return dict(c)
+        pass
 
     def __iter__(self) -> Iterator[TrainingJob]:
         return iter(self.map.values())

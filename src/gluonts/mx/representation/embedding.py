@@ -55,14 +55,3 @@ class Embedding(Representation):
             input_dim=self.num_bins, output_dim=self.size
         )
 
-    def hybrid_forward(
-        self,
-        F,
-        data: Tensor,
-        observed_indicator: Tensor,
-        scale: Optional[Tensor],
-        rep_params: List[Tensor],
-        **kwargs,
-    ) -> Tuple[Tensor, Tensor, List[Tensor]]:
-        data = self.embedding(data)
-        return data, scale, rep_params

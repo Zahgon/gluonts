@@ -90,9 +90,6 @@ class DeepSetSurrogate(Surrogate[EnsembleConfig]):
         elif objective == "ranking":
             self.loss = ListMLELoss(discount=discount)
 
-    @property
-    def required_cpus(self) -> int:
-        return 4
 
     def _fit(
         self, X: List[Config[EnsembleConfig]], y: npt.NDArray[np.float32]
@@ -156,16 +153,6 @@ class DeepSetSurrogate(Surrogate[EnsembleConfig]):
 
         return np.concatenate(predictions, axis=-1)
 
-    @property
-    def _trainer(self) -> pl.Trainer:
-        return pl.Trainer(
-            max_epochs=1000,
-            logger=False,
-            enable_checkpointing=False,
-            enable_model_summary=False,
-            enable_progress_bar=False,
-            gpus=int(torch.cuda.is_available()),
-        )
 
     def _init_model(self, input_dim: int) -> nn.Module:
         return DeepSetModel(

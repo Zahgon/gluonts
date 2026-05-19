@@ -55,17 +55,8 @@ class MultivariateGaussian(Distribution):
     def __getitem__(self, item):
         raise NotImplementedError()
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.mu.shape[:-1]
 
-    @property
-    def event_shape(self) -> Tuple:
-        return self.mu.shape[-1:]
 
-    @property
-    def event_dim(self) -> int:
-        return 1
 
     def log_prob(self, x: Tensor) -> Tensor:
         # todo add an option to compute loss on diagonal covariance only tosave
@@ -96,9 +87,6 @@ class MultivariateGaussian(Distribution):
     def mean(self) -> Tensor:
         return self.mu
 
-    @property
-    def variance(self) -> Tensor:
-        return self.F.linalg_gemm2(self.L, self.L, transpose_b=True)
 
     def sample_rep(
         self, num_samples: Optional[int] = None, dtype=np.float32
@@ -123,17 +111,6 @@ class MultivariateGaussian(Distribution):
             Tensor with shape (num_samples, ..., d).
         """
 
-        def s(mu: Tensor, L: Tensor) -> Tensor:
-            F = self.F
-            samples_std_normal = F.sample_normal(
-                mu=F.zeros_like(mu),
-                sigma=F.ones_like(mu),
-                dtype=dtype,
-            ).expand_dims(axis=-1)
-            samples = (
-                F.linalg_gemm2(L, samples_std_normal).squeeze(axis=-1) + mu
-            )
-            return samples
 
         return _sample_multiple(
             s, mu=self.mu, L=self.L, num_samples=num_samples
@@ -170,6 +147,3 @@ class MultivariateGaussianOutput(DistributionOutput):
 
         return mu_vector, L_diag + L_low
 
-    @property
-    def event_shape(self) -> Tuple:
-        return (self.dim,)

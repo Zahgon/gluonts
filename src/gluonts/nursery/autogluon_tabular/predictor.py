@@ -28,8 +28,6 @@ from gluonts.model.predictor import Predictor
 from gluonts.time_feature import TimeFeature
 
 
-def no_scaling(series: pd.Series):
-    return series, 1.0
 
 
 def mean_abs_scaling(series: pd.Series, minimum_scale=1e-6):
@@ -127,13 +125,6 @@ class TabularPredictor(Predictor):
             else None
         )
 
-    @property
-    def auto_regression(self) -> bool:
-        return (
-            False
-            if not self.lag_indices
-            else self.prediction_length > min(self.lag_indices)
-        )
 
     def _to_forecast(
         self,

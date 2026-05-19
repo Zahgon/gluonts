@@ -70,7 +70,7 @@ class Params:
         Gives dict-like access to Params instance by
         params.dict['learning_rate']
         """
-        return self.__dict__
+        pass
 
 
 class AttackResults:

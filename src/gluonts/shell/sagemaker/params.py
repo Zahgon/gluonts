@@ -29,28 +29,14 @@ def decode_sagemaker_parameter(value: str) -> Union[list, dict, str]:
     Integer values (e.g. `"1"`) are handled by pydantic models further down the
     pipeline.
     """
-    value = value.strip()
-
-    # TODO: is this the right way to do things?
-    #       what about fields which start which match the pattern for
-    #       some reason?
-    is_list = value.startswith("[") and value.endswith("]")
-    is_dict = value.startswith("{") and value.endswith("}")
-
-    if is_list or is_dict:
-        return load_json(value)
-    else:
-        return value
+    pass
 
 
 def encode_sagemaker_parameter(value: Any) -> str:
     """
     All values passed through the SageMaker API must be encoded as strings.
     """
-    if not isinstance(value, str):
-        return dump_json(value)
-    else:
-        return value
+    pass
 
 
 def decode_sagemaker_parameters(encoded_params: dict) -> dict:
@@ -98,8 +84,7 @@ def detrim_and_decode_sagemaker_parameters(trimmed_params: dict) -> dict:
     ... })
     {'foo': [1, 2, 3], 'bar': 'hello'}
     """
-    encoded_params = detrim_sagemaker_parameters(trimmed_params)
-    return valmap(decode_sagemaker_parameter, encoded_params)
+    pass
 
 
 def encode_and_trim_sagemaker_parameters(
@@ -119,8 +104,7 @@ def encode_and_trim_sagemaker_parameters(
      '_0_bar': 'hell',
      '_1_bar': 'o'}
     """
-    endoded_params = valmap(encode_sagemaker_parameter, decoded_params)
-    return trim_encoded_sagemaker_parameters(endoded_params, max_len)
+    pass
 
 
 def trim_encoded_sagemaker_parameters(
@@ -141,14 +125,7 @@ def trim_encoded_sagemaker_parameters(
      '_0_bar': 'hell',
      '_1_bar': 'o'}
     """
-    trimmed_params = {}
-    for key, value in encoded_params.items():
-        if len(value) > max_len:
-            for idx, substr in enumerate(batcher(value, max_len)):
-                trimmed_params[f"_{idx}_{key}"] = "".join(substr)
-        else:
-            trimmed_params[key] = value
-    return trimmed_params
+    pass
 
 
 def detrim_sagemaker_parameters(trimmed_params: dict) -> dict:
@@ -166,20 +143,4 @@ def detrim_sagemaker_parameters(trimmed_params: dict) -> dict:
     ... })
     {'foo': '[1, 2, 3]', 'bar': 'hello'}
     """
-    detrimmed_params = trimmed_params.copy()
-
-    trimmed_param_names = [
-        param[3:] for param in detrimmed_params if param.startswith("_0_")
-    ]
-
-    for name in trimmed_param_names:
-        value = ""
-        for idx in count():
-            part = detrimmed_params.pop(f"_{idx}_{name}", None)
-            if part is None:
-                break
-            value += part
-
-        detrimmed_params[name] = value
-
-    return detrimmed_params
+    pass

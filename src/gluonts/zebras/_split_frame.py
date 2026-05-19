@@ -90,57 +90,9 @@ class SplitFrame:
     def __len__(self):
         return self.past_length + self.future_length
 
-    def set(self, name, value, tdim=None):
-        tdim = maybe.unwrap_or(tdim, self.default_tdim)
-        assert value.shape[tdim] == len(self)
 
-        past, future = np.split(
-            value,
-            [self.past_length],
-            axis=tdim,
-        )
 
-        return _replace(
-            past=merge(self.past, {name: past}),
-            future=merge(self.future, {name: future}),
-            tdims=merge(self.tdims, {name: tdim}),
-        )
 
-    def set_like(self, ref: str, column, value, tdim=None):
-        is_past = ref in self._past
-        is_future = ref in self._future
-
-        if is_past:
-            if is_future:
-                return self.set(column, value, tdim)
-            else:
-                return self.set_past(column, value, tdim)
-        elif is_future:
-            return self.set_future(column, value, tdim)
-
-        raise KeyError(f"Ref {ref} is neither past nor future")
-
-    def set_past(self, name, value, tdim=None):
-        tdim = maybe.unwrap_or(tdim, self.default_tdim)
-        assert value.shape[tdim] == self.past_length
-        assert self.tdims.get(name, tdim) == tdim
-
-        return _replace(
-            self,
-            _past=merge(self._past, {name: value}),
-            tdims=merge(self.tdims, {name: tdim}),
-        )
-
-    def set_future(self, name, value, tdim=None):
-        tdim = maybe.unwrap_or(tdim, self.default_tdim)
-        assert value.shape[tdim] == self.future_length
-        assert self.tdims.get(name, tdim) == tdim
-
-        return _replace(
-            self,
-            _future=merge(self.future, {name: value}),
-            tdims=merge(self.tdims, {name: tdim}),
-        )
 
     def remove(self, column):
         return _replace(
@@ -149,86 +101,12 @@ class SplitFrame:
             tdims=dissoc(self.tdims, column),
         )
 
-    def _repr_html_(self):
-        past = self.past._table_columns()
-        future = self.future._table_columns()
 
-        length = max(
-            len(first(past.values())) if past else 0,
-            len(first(future.values())) if future else 0,
-        )
 
-        def pad(col):
-            to_pad = length - len(col)
-
-            return list(col) + [""] * to_pad
-
-        past = valmap(pad, past)
-        future = valmap(pad, future)
-
-        past = keymap(lambda key: f"past_{key}" if key else "past", past)
-        future = keymap(
-            lambda key: f"future_{key}" if key else "future", future
-        )
-
-        return html_table({**past, "|": ["|"] * length, **future})
-
-    def as_dict(self):
-        past = keymap(lambda key: f"past_{key}", self._past)
-        future = keymap(lambda key: f"future_{key}", self._future)
-
-        return {**past, **future, **self.static}
-
-    def resize(
-        self,
-        past_length: Optional[int] = None,
-        future_length: Optional[int] = None,
-        pad_value=0.0,
-    ) -> SplitFrame:
-        index = self.index
-
-        past_length = maybe.unwrap_or(past_length, self.past_length)
-        future_length = maybe.unwrap_or(future_length, self.future_length)
-
-        if index is not None:
-            # Calculate new start. If current past_length is larger than the
-            # the new one, we shift it to the right, if it's smaller, we need
-            # to go further into the past (shift to the left)
-            start = index[0] + (self.past_length - past_length)
-            index = start.periods(past_length + future_length)
-
-        return _replace(
-            self,
-            _past=self.past.resize(
-                past_length, pad_value, pad="l", skip="l"
-            ).columns,
-            past_length=maybe.unwrap_or(past_length, self.past_length),
-            _future=self.future.resize(
-                future_length, pad_value, pad="r", skip="r"
-            ).columns,
-            future_length=maybe.unwrap_or(future_length, self.future_length),
-            index=index,
-        )
 
     def with_index(self, index):
         return _replace(self, index=index)
 
-    @staticmethod
-    def _batch(split_frames: List[SplitFrame]) -> BatchSplitFrame:
-        ref = split_frames[0]
-        pluck = pluck_attr(split_frames)
-
-        return BatchSplitFrame(
-            _past=rows_to_columns(pluck("_past"), np.stack),  # type: ignore
-            _future=rows_to_columns(pluck("_future"), np.stack),  # type: ignore
-            index=pluck("index"),
-            static=rows_to_columns(pluck("static"), np.stack),  # type: ignore
-            past_length=ref.past_length,
-            future_length=ref.future_length,
-            tdims=ref.tdims,
-            metadata=pluck("metadata"),
-            _pad=pluck("_pad"),
-        )
 
 
 @dataclasses.dataclass
@@ -243,9 +121,6 @@ class BatchSplitFrame:
     metadata: List[Optional[dict]]
     _pad: List[Pad]
 
-    @property
-    def batch_size(self):
-        return len(self.index)
 
     def __len__(self):
         return self.past_length + self.future_length
@@ -283,8 +158,6 @@ class BatchSplitFrame:
     def items(self):
         return BatchSplitFrameItems(self)
 
-    def as_dict(self):
-        return SplitFrame.as_dict(self)
 
 
 @dataclasses.dataclass(repr=False)

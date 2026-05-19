@@ -141,77 +141,11 @@ class PandasDataset:
             .T
         )
 
-    @property
-    def num_feat_static_cat(self) -> int:
-        return len(self._static_cats)
 
-    @property
-    def num_feat_static_real(self) -> int:
-        return len(self._static_reals)
 
-    @property
-    def num_feat_dynamic_real(self) -> int:
-        return maybe.map_or(self.feat_dynamic_real, len, 0)
 
-    @property
-    def num_past_feat_dynamic_real(self) -> int:
-        return maybe.map_or(self.past_feat_dynamic_real, len, 0)
 
-    @property
-    def static_cardinalities(self):
-        return self._static_cats.max(axis=1).values + 1
 
-    def _pair_to_dataentry(self, item_id, df) -> DataEntry:
-        if isinstance(df, pd.Series):
-            df = df.to_frame(name=self.target)
-
-        if self.timestamp:
-            df.index = pd.DatetimeIndex(df[self.timestamp]).to_period(
-                freq=self.freq
-            )
-
-        if not isinstance(df.index, pd.PeriodIndex):
-            df = df.to_period(freq=self.freq)
-
-        if not self.assume_sorted:
-            df.sort_index(inplace=True)
-
-        if not self.unchecked:
-            assert is_uniform(df.index), (
-                "Dataframe index is not uniformly spaced. "
-                "If your dataframe contains data from multiple series in the "
-                'same column ("long" format), consider constructing the '
-                "dataset with `PandasDataset.from_long_dataframe` instead."
-            )
-
-        entry = {
-            "start": df.index[0],
-        }
-
-        target = df[self.target].values
-        target = target[: len(target) - self.future_length]
-        entry["target"] = target.T
-
-        if item_id is not None:
-            entry["item_id"] = item_id
-
-        if self.num_feat_static_cat > 0:
-            entry["feat_static_cat"] = self._static_cats[item_id].values
-
-        if self.num_feat_static_real > 0:
-            entry["feat_static_real"] = self._static_reals[item_id].values
-
-        if self.num_feat_dynamic_real > 0:
-            entry["feat_dynamic_real"] = df[self.feat_dynamic_real].values.T
-
-        if self.num_past_feat_dynamic_real > 0:
-            past_feat_dynamic_real = df[self.past_feat_dynamic_real].values
-            past_feat_dynamic_real = past_feat_dynamic_real[
-                : len(past_feat_dynamic_real) - self.future_length
-            ]
-            entry["past_feat_dynamic_real"] = past_feat_dynamic_real.T
-
-        return entry
 
     def __iter__(self):
         yield from self._data_entries
@@ -281,47 +215,9 @@ class PandasDataset:
         PandasDataset
             Dataset containing series data from the given long dataframe.
         """
-        if timestamp is not None:
-            logger.info(f"Indexing data by '{timestamp}'.")
-            dataframe.index = pd.to_datetime(dataframe[timestamp])
-
-        if not isinstance(dataframe.index, DatetimeIndexOpsMixin):
-            logger.info("Converting index into DatetimeIndex.")
-            dataframe.index = pd.to_datetime(dataframe.index)
-
-        if static_feature_columns is not None:
-            logger.info(
-                f"Collecting features from columns {static_feature_columns}."
-            )
-            other_static_features = (
-                dataframe[[item_id] + static_feature_columns]
-                .drop_duplicates()
-                .set_index(item_id)
-            )
-            assert len(other_static_features) == len(
-                dataframe[item_id].unique()
-            )
-        else:
-            other_static_features = pd.DataFrame()
-
-        logger.info(f"Grouping data by '{item_id}'; this may take some time.")
-        pairs = list(dataframe.groupby(item_id, observed=True))
-
-        return cls(
-            dataframes=pairs,
-            static_features=pd.concat(
-                [static_features, other_static_features], axis=1
-            ),
-            **kwargs,
-        )
+        pass
 
 
-def pair_with_item_id(obj: Union[tuple, pd.DataFrame, pd.Series]):
-    if isinstance(obj, tuple) and len(obj) == 2:
-        return obj
-    if isinstance(obj, (pd.DataFrame, pd.Series)):
-        return (None, obj)
-    raise ValueError("input must be a pair, or a pandas Series or DataFrame.")
 
 
 def infer_freq(index: pd.Index) -> str:
@@ -350,5 +246,4 @@ def is_uniform(index: pd.PeriodIndex) -> bool:
         >>> is_uniform(pd.DatetimeIndex(ts).to_period("2H"))
         False
     """
-
-    return bool(np.all(np.diff(index.asi8) == index.freq.n))
+    pass

@@ -83,11 +83,6 @@ class SNDense(mx.gluon.HybridBlock):
             else:
                 self._act = None
 
-    @property
-    def weight(self):
-        return self._spectral_norm(
-            self._weight.data(self._ctx), self._u.data(self._ctx)
-        )
 
     def hybrid_forward(self, F, x, _weight, _u, _bias=None):
         """
@@ -103,20 +98,7 @@ class SNDense(mx.gluon.HybridBlock):
             Output Tensor of SNDense layer
 
         """
-        act = nd.FullyConnected(
-            data=x,
-            weight=self._spectral_norm(_weight, _u),
-            bias=_bias,
-            no_bias=_bias is None,
-            num_hidden=self._units,
-            flatten=self._flatten,
-            name="fwd",
-        )
-
-        if self._act is not None:
-            act = self._act(act)
-
-        return act
+        pass
 
     def __repr__(self):
         s = "{name}({layout}, {act})"
@@ -132,25 +114,4 @@ class SNDense(mx.gluon.HybridBlock):
         Adapted from https://github.com/apache/incubator-
         mxnet/blob/master/example/gluon/sn_gan/model.py.
         """
-        w = weight
-        w_mat = nd.reshape(w, [w.shape[0], -1])
-
-        _u = u
-        _v = None
-
-        for _ in range(self._num_power_iter):
-            _v = nd.L2Normalization(nd.dot(_u, w_mat))
-            _u = nd.L2Normalization(nd.dot(_v, w_mat.T))
-
-        sigma = nd.sum(nd.dot(_u, w_mat) * _v)
-
-        # this is different from standard spectral normalization
-        sigma = nd.maximum(nd.ones(1, ctx=self._ctx), sigma / self._coeff)
-
-        if sigma == 0.0:
-            sigma = EPSILON
-
-        with autograd.pause():
-            self._u.set_data(_u)
-
-        return w / sigma
+        pass

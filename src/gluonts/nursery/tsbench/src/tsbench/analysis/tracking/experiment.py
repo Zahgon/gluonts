@@ -45,7 +45,7 @@ class SacredExperiment:
         """
         Returns the names of all artifacts associated with the experiment.
         """
-        return [a["name"] for a in self.info["artifacts"]]
+        pass
 
     def read_parquet(self, artifact: str) -> pd.DataFrame:
         """
@@ -88,11 +88,7 @@ class SacredExperiment:
         Deletes the experiment by setting the associated experiment name to
         "Trash".
         """
-        self.db.runs.update_one(
-            {"_id": self.info["_id"]},
-            {"$set": {"config.name": "Trash"}},
-            upsert=False,
-        )
+        pass
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(config={self.info['config']})"

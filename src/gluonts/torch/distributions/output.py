@@ -69,13 +69,7 @@ class Output:
     args_dim: Dict[str, int]
     _dtype: Type = np.float32
 
-    @property
-    def dtype(self):
-        return self._dtype
 
-    @dtype.setter
-    def dtype(self, dtype: Type):
-        self._dtype = dtype
 
     def loss(
         self,
@@ -141,4 +135,4 @@ class Output:
 
         By default 0.0.
         """
-        return 0.0
+        pass

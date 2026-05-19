@@ -129,23 +129,7 @@ class PeriodicKernelOutput(KernelOutputDict):
             model noise hyper-parameter. Each is a Tensor of shape
             (batch_size, 1, 1).
         """
-        axis = 1
-        sigma_scaling = (
-            self.compute_std(F, past_target, axis=axis) / math.sqrt(2)
-        ).expand_dims(axis=axis)
-        amplitude_scaling = sigma_scaling**2
-        length_scale_scaling = F.broadcast_mul(
-            F.mean(self.compute_std(F, past_time_feat, axis=axis)),
-            F.ones_like(amplitude_scaling),
-        )
-        # TODO: Define scaling for the frequency
-        frequency_scaling = F.ones_like(amplitude_scaling)
-        return (
-            amplitude_scaling,
-            length_scale_scaling,
-            frequency_scaling,
-            sigma_scaling,
-        )
+        pass
 
     @classmethod
     def domain_map(cls, F, amplitude, length_scale, frequency):

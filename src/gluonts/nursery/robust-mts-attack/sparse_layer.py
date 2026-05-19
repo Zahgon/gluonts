@@ -32,19 +32,10 @@ sparsity = 100
 sampling_size = 20
 
 
-def save_object(obj, filename):
-    with open(filename, "wb") as output:
-        pickle.dump(obj, output)
 
 
-def load_object(filename):
-    with open(filename, "rb") as output:
-        return pickle.load(output)
 
 
-def check(FOLDER):
-    if not os.path.exists(FOLDER):
-        os.makedirs(FOLDER)
 
 
 def seed(np_seed=11041987, torch_seed=20051987):

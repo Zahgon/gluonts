@@ -77,9 +77,6 @@ class NBEATSEnsemblePredictor(Predictor):
         self.predictors = predictors
         self.aggregation_method = aggregation_method
 
-    def set_aggregation_method(self, aggregation_method: str):
-        assert aggregation_method in AGGREGATION_METHODS
-        self.aggregation_method = aggregation_method
 
     def serialize(self, path: Path) -> None:
         # serialize some metadata
@@ -489,15 +486,3 @@ class NBEATSEnsembleEstimator(Estimator):
             training_data=training_data, validation_data=validation_data
         )
 
-    def train_from(
-        self,
-        predictor: Predictor,
-        training_data: Dataset,
-        validation_data: Optional[Dataset] = None,
-    ) -> NBEATSEnsemblePredictor:
-        assert isinstance(predictor, NBEATSEnsemblePredictor)
-        return self._train(
-            training_data=training_data,
-            validation_data=validation_data,
-            from_predictor=predictor,
-        )

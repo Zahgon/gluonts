@@ -28,6 +28,3 @@ class Map:
 lift = curry(Map)
 
 
-@partition.register
-def partition_map(xs: Map, n):
-    return [Map(xs.fn, part) for part in partition(xs.xs, n)]

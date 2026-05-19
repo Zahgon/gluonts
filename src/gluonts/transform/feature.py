@@ -302,14 +302,6 @@ class AddConstFeature(MapTransformation):
         self.output_field = output_field
         self.target_field = target_field
 
-    def map_transform(self, data: DataEntry, is_train: bool) -> DataEntry:
-        length = target_transformation_length(
-            data[self.target_field], self.pred_length, is_train=is_train
-        )
-        data[self.output_field] = self.const * np.ones(
-            shape=(1, length), dtype=self.dtype
-        )
-        return data
 
 
 class AddTimeFeatures(MapTransformation):
@@ -351,23 +343,6 @@ class AddTimeFeatures(MapTransformation):
         self.output_field = output_field
         self.dtype = dtype
 
-    def map_transform(self, data: DataEntry, is_train: bool) -> DataEntry:
-        if not self.date_features:
-            data[self.output_field] = None
-            return data
-
-        start = data[self.start_field]
-        length = target_transformation_length(
-            data[self.target_field], self.pred_length, is_train=is_train
-        )
-
-        index = pd.period_range(start, periods=length, freq=start.freq)
-
-        data[self.output_field] = np.vstack(
-            [feat(index) for feat in self.date_features]
-        ).astype(self.dtype)
-
-        return data
 
 
 class AddAgeFeature(MapTransformation):
@@ -410,19 +385,6 @@ class AddAgeFeature(MapTransformation):
         self._age_feature = np.zeros(0)
         self.dtype = dtype
 
-    def map_transform(self, data: DataEntry, is_train: bool) -> DataEntry:
-        length = target_transformation_length(
-            data[self.target_field], self.pred_length, is_train=is_train
-        )
-
-        if self.log_scale:
-            age = np.log10(2.0 + np.arange(length, dtype=self.dtype))
-        else:
-            age = np.arange(length, dtype=self.dtype)
-
-        data[self.feature_name] = age.reshape((1, length))
-
-        return data
 
 
 class AddAggregateLags(MapTransformation):
@@ -499,55 +461,6 @@ class AddAggregateLags(MapTransformation):
                 f" {self.agg_freq} are ignored."
             )
 
-    def map_transform(self, data: DataEntry, is_train: bool) -> DataEntry:
-        assert self.base_freq == data["start"].freq
-
-        # convert to pandas Series for easier indexing and aggregation
-        if is_train:
-            t = data[self.target_field]
-        else:
-            t = np.concatenate(
-                [data[self.target_field], np.zeros(shape=(self.pred_length,))],
-                axis=0,
-            )
-
-        # convert to pandas Series for easier rolling window aggregation
-        t_agg = (pd.Series(t).rolling(self.ratio).agg(self.agg_fun))[
-            self.ratio - 1 :
-        ]
-
-        # compute the aggregate lags for each time point of the time series
-        agg_vals = np.concatenate(
-            [
-                np.zeros(
-                    (max(self.valid_lags) * self.ratio + self.half_window + 1,)
-                ),
-                t_agg.values,
-            ],
-            axis=0,
-        )
-        lags = np.vstack(
-            [
-                agg_vals[
-                    -(l * self.ratio - self.half_window + len(t)) : (
-                        -(l * self.ratio - self.half_window)
-                        if -(l * self.ratio - self.half_window) != 0
-                        else None
-                    )
-                ]
-                for l in self.valid_lags
-            ]
-        )
-
-        # update the data entry
-        data[self.feature_name] = np.nan_to_num(lags)
-
-        assert data[self.feature_name].shape == (
-            len(self.valid_lags),
-            len(data[self.target_field]) + self.pred_length * (not is_train),
-        )
-
-        return data
 
 
 class CountTrailingZeros(SimpleTransformation):

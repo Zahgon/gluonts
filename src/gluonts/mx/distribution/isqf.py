@@ -121,15 +121,6 @@ class ISQF(Distribution):
     def F(self):
         return getF(self.beta_l)
 
-    @property
-    def args(self) -> List:
-        return [
-            self.spline_knots,
-            self.spline_heights,
-            self.beta_l,
-            self.beta_r,
-            self.qk_y_all,
-        ]
 
     @staticmethod
     def parametrize_qk(
@@ -818,17 +809,8 @@ class ISQF(Distribution):
 
         return sample
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.beta_l.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
 
 class ISQFOutput(DistributionOutput):
@@ -999,9 +981,6 @@ class ISQFOutput(DistributionOutput):
 
         return distr_args_reshape, qk_x_reshape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
 
 class TransformedISQF(TransformedDistribution, ISQF):

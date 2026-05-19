@@ -27,16 +27,7 @@ def add_spikes(ts: torch.Tensor, only_upper_spikes: bool = False):
         ts: time series
         only_upper_spikes: boolean to indicate upper-tailed or two-tailed spikes
     """
-    num_spikes = int(0.15 * ts.shape[0])
-    indices_for_gp_spikes = np.random.choice(
-        np.arange(len(ts)), replace=False, size=num_spikes
-    )
-    spike_direction = np.random.choice([-1, 1], replace=True, size=num_spikes)
-    if only_upper_spikes:
-        spike_direction = np.ones_like(spike_direction)
-    spikes = stats.genpareto(1 / 50).rvs(num_spikes) * spike_direction
-    ts[indices_for_gp_spikes] += spikes
-    return ts
+    pass
 
 
 def create_ds(
@@ -58,12 +49,7 @@ def create_ds(
       points_per_sinusoid: int, datapoints per sine period
       magnitude_sin: float, magnitude of sine amplitude
     """
-    end = num_points / points_per_sinusoid * 2 * np.pi
-    sinusoid = np.sin(np.linspace(0, end, num_points)) * magnitude_sin
-    noise = np.random.standard_t(t_dof, num_points) * noise_mult
-    values = sinusoid + noise + 5.0
-    values = add_spikes(values)
-    return torch.tensor(values.reshape(1, 1, -1))
+    pass
 
 
 def create_ds_iid(num_points: int, noise_mult: float = 0.25):
@@ -75,9 +61,7 @@ def create_ds_iid(num_points: int, noise_mult: float = 0.25):
       num_points: int, number of points in the dataset.
       noise_mult: float, standard deviation
     """
-    values = np.random.normal(0, noise_mult, size=num_points)
-    values = add_spikes(values)
-    return torch.tensor(values.reshape(1, 1, -1))
+    pass
 
 
 def add_spikes_asymmetric(
@@ -91,30 +75,7 @@ def add_spikes_asymmetric(
         ts: time series
         xi: [float, float], GenPareto heaviness parameter for [lower, upper] noise respectively
     """
-    num_spikes = int(0.15 * ts.shape[0])
-    half_num_spikes = [int(num_spikes / 2)]
-    half_num_spikes.append(num_spikes - half_num_spikes[0])
-    spike_direction = [-1, 1]
-
-    indices_for_gp_spikes = np.random.choice(
-        np.arange(len(ts)), replace=False, size=num_spikes
-    )
-
-    idx = 0
-    spikes = (
-        stats.genpareto(xi[idx]).rvs(half_num_spikes[idx])
-        * spike_direction[idx]
-    )
-    ts[indices_for_gp_spikes[: half_num_spikes[0]]] += spikes
-
-    idx = 1
-    spikes = (
-        stats.genpareto(xi[idx]).rvs(half_num_spikes[idx])
-        * spike_direction[idx]
-    )
-    ts[indices_for_gp_spikes[half_num_spikes[0] :]] += spikes
-
-    return ts
+    pass
 
 
 def create_ds_asymmetric(
@@ -137,21 +98,4 @@ def create_ds_asymmetric(
       points_per_sinusoid: int, datapoints per sine period
       magnitude_sin: float, magnitude of sine amplitude
     """
-    end = num_points / points_per_sinusoid * 2 * np.pi
-    sinusoid = np.sin(np.linspace(0, end, num_points)) * magnitude_sin
-
-    idx = 0
-    noise_lower = (
-        np.random.standard_t(t_dof[idx], num_points) * noise_mult[idx]
-    )
-    noise_lower = np.minimum(0, noise_lower)
-
-    idx = 1
-    noise_upper = (
-        np.random.standard_t(t_dof[idx], num_points) * noise_mult[idx]
-    )
-    noise_upper = np.maximum(0, noise_upper)
-
-    values = sinusoid + noise_lower + noise_upper + 5.0
-    values = add_spikes_asymmetric(values, xi=xi)
-    return torch.tensor(values.reshape(1, 1, -1))
+    pass

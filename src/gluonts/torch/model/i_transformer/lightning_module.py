@@ -69,42 +69,16 @@ class ITransformerLightningModule(pl.LightningModule):
         """
         Execute training step.
         """
-        train_loss = self.model.loss(
-            **select(self.inputs, batch),
-            future_target=batch["future_target"],
-            future_observed_values=batch["future_observed_values"],
-        ).mean()
-
-        self.log(
-            "train_loss",
-            train_loss,
-            on_epoch=True,
-            on_step=False,
-            prog_bar=True,
-        )
-        return train_loss
+        pass
 
     def validation_step(self, batch, batch_idx: int):  # type: ignore
         """
         Execute validation step.
         """
-        val_loss = self.model.loss(
-            **select(self.inputs, batch),
-            future_target=batch["future_target"],
-            future_observed_values=batch["future_observed_values"],
-        ).mean()
-
-        self.log(
-            "val_loss", val_loss, on_epoch=True, on_step=False, prog_bar=True
-        )
-        return val_loss
+        pass
 
     def configure_optimizers(self):
         """
         Returns the optimizer to use.
         """
-        return torch.optim.Adam(
-            self.model.parameters(),
-            lr=self.lr,
-            weight_decay=self.weight_decay,
-        )
+        pass

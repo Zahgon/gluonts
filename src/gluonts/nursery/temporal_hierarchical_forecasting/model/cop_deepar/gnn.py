@@ -38,14 +38,3 @@ class GNN(mx.gluon.HybridBlock):
                     units=self.units, flatten=False
                 )
 
-    def hybrid_forward(self, F, x, *args, **kwargs):
-        # Do message passing for `num_layers` times with learnable weights.
-        for _ in range(self.num_layers):
-            if self.use_mlp:
-                x = x + self.gnn_layer(x)
-                x = F.dot(x.swapaxes(-1, -2), self.adj_matrix).swapaxes(-1, -2)
-                x = F.relu(x)
-            else:
-                x = F.dot(x.swapaxes(-1, -2), self.adj_matrix).swapaxes(-1, -2)
-
-        return x

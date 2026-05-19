@@ -187,46 +187,6 @@ class SamplingTripletDataset(IterableDataset[Triplet]):  # type: ignore
             )
             yield Triplet(support_set, query_past, query_future)
 
-    def _sample_queries(self):
-        query_past = []
-        query_future = []
-        query_cheat = []
-        for _ in range(self.num_queries):
-            # First, sample a time series with probability relative to its length
-            idx = next(self.index_iterator)
-            series = self.dataset[idx]
-
-            # Then, sample a slice with uniform probability
-            # context should be at least prediction length long
-            split_point = np.random.choice(
-                np.arange(
-                    self.prediction_length,
-                    len(series) - self.prediction_length + 1,
-                )
-            )
-            prediction = series[
-                split_point : split_point + self.prediction_length
-            ]
-            context_start = max(0, split_point - self.context_length)
-            context = series[context_start:split_point]
-
-            query_past.append(context)
-            query_future.append(prediction)
-
-            # sample the start of the cheat time series
-            cheat_earliest_start = max(
-                0,
-                context_start
-                - self.support_length
-                + self.context_length
-                + self.prediction_length,
-            )
-            cheat_start = np.random.choice(
-                np.arange(cheat_earliest_start, context_start + 1)
-            )
-            cheat_end = min(len(series), cheat_start + self.support_length)
-            query_cheat.append(series[cheat_start:cheat_end])
-        return query_past, query_future, query_cheat, idx
 
 
 class SequentialTripletDataset(Dataset[Triplet]):  # type: ignore
@@ -329,13 +289,6 @@ class SequentialTripletDataset(Dataset[Triplet]):  # type: ignore
         )
         return Triplet(support_set, query_past, query_future)
 
-    def _last_slice(self, series: TimeSeries):
-        split_point = len(series) - self.dataset.prediction_length
-        prediction = series[split_point : split_point + self.prediction_length]
-        context = series[
-            max(0, split_point - self.context_length) : split_point
-        ]
-        return context, prediction
 
 
 def sample_supps(
@@ -356,40 +309,7 @@ def sample_supps(
         q_split: The latest possible end time of all support time series
         cheat_query: If not None, the cheat query is contained in the support set at a random position.
     """
-
-    support_set = []
-    for i in range(supps_size):
-        series = dataset[next(index_iterator)]
-        if q_split:
-            # support set slice is the one closest to the prediction point of the query
-            freq = series.start_date.freq
-            end_point = min(
-                (
-                    q_split.to_period(freq) - series.start_date.to_period(freq)
-                ).n,
-                len(series),
-            )
-            if end_point <= 0:
-                # this should basically never happen and is only there to not break the training in case it happens
-                support_set.append(
-                    TimeSeries(
-                        dataset_name=series.dataset_name,
-                        start_date=None,
-                        values=torch.zeros(1, 1),
-                        scale=torch.as_tensor([0, 1]),
-                    )
-                )
-                continue
-        else:
-            # if possible choose a full-length slice
-            end_point = np.random.randint(
-                low=min(len(series), length), high=len(series) + 1
-            )
-        support_ts = series[max(0, end_point - length) : end_point]
-        support_set.append(support_ts)
-    if cheat_query is not None:
-        support_set[np.random.choice(supps_size)] = cheat_query
-    return support_set
+    pass
 
 
 class SuperSamplingTripletDataset(IterableDataset[Triplet]):  # type: ignore

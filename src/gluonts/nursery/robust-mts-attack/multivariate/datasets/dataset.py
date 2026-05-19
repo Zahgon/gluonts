@@ -41,15 +41,6 @@ def extract_dataset(dataset_name: str):
         safe_extractall(tf, default_dataset_path)
 
 
-def pivot_dataset(dataset):
-    ds_list = list(dataset)
-    return [
-        {
-            "item": "0",
-            "start": ds_list[0]["start"],
-            "target": np.vstack([d["target"] for d in ds_list]),
-        }
-    ]
 
 
 class MultivariateDatasetInfo(NamedTuple):
@@ -61,33 +52,6 @@ class MultivariateDatasetInfo(NamedTuple):
     target_dim: int
 
 
-def make_dataset(
-    values: np.ndarray,
-    prediction_length: int,
-    start: str = "1700-01-01",
-    freq: str = "1H",
-):
-    target_dim = values.shape[0]
-
-    print(
-        f"making dataset with {target_dim} dimension and {values.shape[1]} observations."
-    )
-
-    start = pd.Timestamp(start, freq)
-
-    train_ds = [
-        {"item": "0", "start": start, "target": values[:, :-prediction_length]}
-    ]
-    test_ds = [{"item": "0", "start": start, "target": values}]
-
-    return MultivariateDatasetInfo(
-        name="custom",
-        train_ds=train_ds,
-        test_ds=test_ds,
-        target_dim=target_dim,
-        freq=freq,
-        prediction_length=prediction_length,
-    )
 
 
 def make_multivariate_dataset(
@@ -145,30 +109,7 @@ def random_periodic(max_target_dim: int = 16, prediction_length: int = 24):
     :param levels: each input timeseries is drawn from normal distributions with mean=l, for each l in levels
     :return:
     """
-    num_periods = 100
-    levels = np.random.uniform(low=0, high=100, size=(max_target_dim,))
-    levels = np.expand_dims(levels, axis=1) * np.ones(
-        (max_target_dim, prediction_length)
-    )
-
-    noise_level = 1.0
-    seasonal_noise = np.random.uniform(
-        low=0, high=noise_level, size=(max_target_dim,)
-    )
-
-    seasonal_noise = np.expand_dims(seasonal_noise, axis=1) * np.ones(
-        (max_target_dim, prediction_length)
-    )
-    seed_values = np.random.normal(loc=levels, scale=seasonal_noise * levels)
-
-    values = np.hstack([seed_values for _ in range(num_periods)])
-
-    levels = np.hstack([levels for _ in range(num_periods)])
-    noise = np.random.normal(
-        loc=0 * levels, scale=levels / 5, size=values.shape
-    )
-
-    return make_dataset(values + noise, prediction_length)
+    pass
 
 
 def electricity(max_target_dim: int = None):

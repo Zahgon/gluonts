@@ -74,30 +74,4 @@ class MeanScaling(Representation):
 
         return F.maximum(scale, self.scale_min)
 
-    def hybrid_forward(
-        self,
-        F,
-        data: Tensor,
-        observed_indicator: Tensor,
-        scale: Optional[Tensor],
-        rep_params: List[Tensor],
-        **kwargs,
-    ) -> Tuple[Tensor, Tensor, List[Tensor]]:
-        data = F.cast(data, dtype="float32")
 
-        if scale is None:
-            scale = self.compute_scale(F, data, observed_indicator)
-            scale = scale.expand_dims(axis=1)
-
-        scaled_data = F.broadcast_div(data, scale)
-
-        if self.clip_max is not None:
-            scaled_data = F.clip(scaled_data, -self.clip_max, self.clip_max)
-
-        return scaled_data, scale, []
-
-    def post_transform(
-        self, F, samples: Tensor, scale: Tensor, rep_params: List[Tensor]
-    ) -> Tensor:
-        transf_samples = F.broadcast_mul(samples, scale)
-        return transf_samples

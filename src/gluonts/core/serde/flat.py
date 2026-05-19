@@ -150,8 +150,6 @@ def _translate(data):
 
 
 def decode(data: dict) -> Any:
-    def split_path(s):
-        return tuple(s.split("."))
 
     nested = nest(keymap(split_path, data))
     encoded = _translate(nested)

@@ -149,14 +149,6 @@ class SuperDataModule(pl.LightningDataModule):
         self.catch22_val_test = catch22_val_test
         self.num_workers = num_workers
 
-    @property
-    def prediction_length(self) -> int:
-        all_dms = (
-            self.data_modules_train
-            + self.data_modules_val
-            + self.data_modules_test
-        )
-        return max([dm.prediction_length for dm in all_dms])
 
     def setup(self, stage: Optional[str] = None) -> None:
         for dm in tqdm(

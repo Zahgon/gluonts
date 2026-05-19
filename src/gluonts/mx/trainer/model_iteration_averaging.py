@@ -148,10 +148,7 @@ class IterationAveragingStrategy:
         model
             The model that the cached model is loaded to.
         """
-        if self.cached_model is not None:
-            # load the cached model
-            for name, param_cached in self.cached_model.items():
-                model.collect_params()[name].set_data(param_cached)
+        pass
 
 
 class NTA(IterationAveragingStrategy):
@@ -321,25 +318,8 @@ class ModelIterationAveraging(Callback):
     def __init__(self, avg_strategy: IterationAveragingStrategy):
         self.avg_strategy = avg_strategy
 
-    def on_validation_epoch_start(
-        self, training_network: nn.HybridBlock
-    ) -> None:
-        # use averaged model for validation
-        self.avg_strategy.load_averaged_model(training_network)
 
-    def on_validation_epoch_end(
-        self,
-        epoch_no: int,
-        epoch_loss: float,
-        training_network: nn.HybridBlock,
-        trainer: gluon.Trainer,
-    ) -> bool:
-        self.avg_strategy.load_cached_model(training_network)
-        return True
 
-    def on_train_batch_end(self, training_network: nn.HybridBlock) -> bool:
-        self.avg_strategy.apply(training_network)
-        return True
 
     def on_epoch_end(
         self,

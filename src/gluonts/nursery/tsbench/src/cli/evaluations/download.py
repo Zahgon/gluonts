@@ -136,12 +136,6 @@ def _download_public_evaluations(
         )
 
 
-def _download_object(
-    key: str, bucket: str, client: Any, destination: Path
-) -> None:
-    target = destination / key
-    target.parent.mkdir(parents=True, exist_ok=True)
-    client.download_file(Bucket=bucket, Key=key, Filename=str(target))
 
 
 def _extract_object_names(response: Dict[str, Any]) -> List[str]:
@@ -155,5 +149,3 @@ def _extract_object_names(response: Dict[str, Any]) -> List[str]:
     ]
 
 
-def _move_job(job: Job, target: Path, include_forecasts: bool):
-    job.save(target, include_forecasts=include_forecasts)

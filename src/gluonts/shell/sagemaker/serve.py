@@ -35,8 +35,3 @@ class ServeEnv:
             os.environ.get("SAGEMAKER_BATCH", "false") == "true"
         )
 
-    def install_dynamic(self):
-        code = self.path.model / "code"
-
-        if code.is_dir():
-            install_and_restart(code, self.path.base / "code")

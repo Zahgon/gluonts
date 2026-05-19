@@ -42,20 +42,6 @@ from . import schema
 Batchable = TypeVar("Batchable", TimeSeries, TimeFrame, SplitFrame)
 
 
-def batch(xs: list):
-    assert xs, "Passed data cannot be empty."
-    types = set(map(type, xs))
-    assert (
-        len(types) == 1
-    ), "All values need to be of same type, got: " + ", ".join(
-        f"'{ty.__name__}'" for ty in types
-    )
-    ty = types.pop()
-    assert ty in set(
-        Batchable.__constraints__  # type: ignore
-    ), f"Unsupported type: '{ty.__name__}'"
-
-    return ty._batch(xs)  # type: ignore
 
 
 def from_pandas(obj):

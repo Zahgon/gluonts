@@ -311,9 +311,6 @@ class MADE(nn.Module):
         ]
         self.net = nn.Sequential(*self.net)
 
-    @property
-    def base_dist(self):
-        return Normal(self.base_dist_mean, self.base_dist_var)
 
     def forward(self, x, y=None):
         # MAF eq 4 -- return mean and log std
@@ -351,17 +348,8 @@ class Flow(nn.Module):
         self.register_buffer("base_dist_mean", torch.zeros(input_size))
         self.register_buffer("base_dist_var", torch.ones(input_size))
 
-    @property
-    def base_dist(self):
-        return Normal(self.base_dist_mean, self.base_dist_var)
 
-    @property
-    def scale(self):
-        return self.__scale
 
-    @scale.setter
-    def scale(self, scale):
-        self.__scale = scale
 
     def forward(self, x, cond):
         if self.scale is not None:

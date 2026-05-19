@@ -59,19 +59,6 @@ class TimeSeries(TimeBase):
     def __len__(self):
         return self.values.shape[self.tdim]
 
-    def _slice_tdim(self, idx):
-        if isinstance(idx, int):
-            return AxisView(self.values, self.tdim)[idx]
-
-        start, stop, step = idx.indices(len(self))
-        assert step == 1
-
-        return _replace(
-            self,
-            values=AxisView(self.values, self.tdim)[idx],
-            index=maybe.map(self.index, itemgetter(idx)),
-            _pad=self._pad.extend(-start, stop - len(self)),
-        )
 
     def pad(self, value, left: int = 0, right: int = 0) -> TimeSeries:
         assert left >= 0 and right >= 0
@@ -95,31 +82,6 @@ class TimeSeries(TimeBase):
             _pad=self._pad.extend(left, right),
         )
 
-    @staticmethod
-    def _batch(xs: List[TimeSeries]) -> BatchTimeSeries:
-        for series in xs:
-            assert type(series) == TimeSeries
-
-        pluck = pluck_attr(xs)
-
-        tdims = set(pluck("tdim"))
-        assert len(tdims) == 1
-        tdim = first(tdims)
-        if tdim >= 0:
-            # We insert a new axis at the front, so if tdim is counting from
-            # the left (tdim is positive) we need to shift by one to the right.
-            tdim += 1
-
-        values = np.stack(pluck("values"))
-
-        return BatchTimeSeries(
-            values=values,
-            tdim=tdim,
-            index=pluck("index"),
-            name=pluck("name"),
-            metadata=pluck("metadata"),
-            _pad=pluck("_pad"),
-        )
 
     def plot(self):
         import matplotlib.pyplot as plt
@@ -139,29 +101,7 @@ class BatchTimeSeries(TimeBase):
     metadata: List[Optional[dict]]
     _pad: List[Pad]
 
-    def _slice_tdim(self, idx):
-        if isinstance(idx, int):
-            return AxisView(self.values, self.tdim)[idx]
 
-        start, stop, step = idx.indices(len(self))
-        assert step == 1
-
-        def calc_pad(pad):
-            pad_left = max(0, pad.left - start)
-            pad_right = max(0, pad.right + stop + 1 - len(self) - pad_left)
-
-            return Pad(pad_left, pad_right)
-
-        return _replace(
-            self,
-            values=AxisView(self.values, self.tdim)[idx],
-            index=[maybe.map(index, itemgetter(idx)) for index in self.index],
-            _pad=list(map(calc_pad, self._pad)),
-        )
-
-    @property
-    def batch_size(self):
-        return len(self.values)
 
     def __len__(self):
         return self.values.shape[self.tdim]
@@ -187,8 +127,6 @@ class BatchTimeSeries(TimeBase):
             value=value,
         )
 
-        def extend_index(index):
-            return index.prepend(left).extend(right)
 
         return _replace(
             self,
@@ -197,8 +135,6 @@ class BatchTimeSeries(TimeBase):
             _pad=[pad.extend(left, right) for pad in self._pad],
         )
 
-    def like(self, values: np.ndarray, name: Optional[str] = None):
-        return _replace(self, values=values, name=name)
 
 
 @dataclasses.dataclass(repr=False)

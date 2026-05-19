@@ -278,53 +278,7 @@ class GaussianProcess:
                 Predictive standard deviation of the GP of shape
                 (batch_size, prediction_length).
         """
-        assert (
-            self.context_length is not None
-        ), "The value of `context_length` must be set."
-        assert (
-            self.prediction_length is not None
-        ), "The value of `prediction_length` must be set."
-        # Compute Cholesky factorization of training kernel matrix
-        l_train = self._compute_cholesky_gp(
-            self.kernel.kernel_matrix(x_train, x_train), self.context_length
-        )
-
-        lower_tri_solve = self.F.linalg.trsm(
-            l_train, self.kernel.kernel_matrix(x_train, x_test)
-        )
-        predictive_mean = self.F.linalg.gemm2(
-            lower_tri_solve,
-            self.F.linalg.trsm(l_train, y_train.expand_dims(axis=-1)),
-            transpose_a=True,
-        ).squeeze(axis=-1)
-        # Can rewrite second term as
-        # :math:`||L^-1 * K(x_train,x_test||_2^2`
-        #  and only solve 1 equation
-        predictive_covariance = self.kernel.kernel_matrix(
-            x_test, x_test
-        ) - self.F.linalg.gemm2(
-            lower_tri_solve, lower_tri_solve, transpose_a=True
-        )
-        # Extract diagonal entries of covariance matrix
-        predictive_std = batch_diagonal(
-            self.F,
-            predictive_covariance,
-            self.prediction_length,
-            self.float_type,
-        )
-        # If self.sample_noise = True, predictive covariance has sigma^2 on the
-        # diagonal
-        if self.sample_noise:
-            predictive_std = self.F.broadcast_add(
-                predictive_std, self.sigma**2
-            )
-        predictive_std = self.F.sqrt(predictive_std).squeeze(axis=-1)
-        # Compute sample from GP predictive distribution
-        return (
-            self.sample(predictive_mean, predictive_covariance),
-            predictive_mean,
-            predictive_std,
-        )
+        pass
 
     @staticmethod
     def plot(

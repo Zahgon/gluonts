@@ -21,8 +21,6 @@ class Action:
     def apply(self, stream):
         raise NotImplementedError
 
-    def apply_one(self, data):
-        return list(self.apply([data]))
 
     def apply_schema(self, schema):
         raise NotImplementedError

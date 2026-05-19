@@ -105,7 +105,7 @@ def deriv_tanh(F, x: Tensor) -> Tensor:
     Tensor
         Derivative tensor
     """
-    return 1 - F.tanh(x) ** 2
+    pass
 
 
 def deriv_softrelu(F, x: Tensor) -> Tensor:
@@ -125,8 +125,7 @@ def deriv_softrelu(F, x: Tensor) -> Tensor:
     Tensor
         Derivative tensor
     """
-    e = mx.nd.exp(x)
-    return e / (1 + e)
+    pass
 
 
 def deriv_elu(F, x: Tensor, alpha: float = 1.0) -> Tensor:
@@ -148,8 +147,7 @@ def deriv_elu(F, x: Tensor, alpha: float = 1.0) -> Tensor:
     Tensor
         Derivative tensor
     """
-    m = x > 0
-    return m + (1 - m) * (F.LeakyReLU(x, act_type="elu", slope=alpha) + alpha)
+    pass
 
 
 def deriv_swish(F, x: Tensor, beta: Tensor) -> Tensor:
@@ -171,8 +169,7 @@ def deriv_swish(F, x: Tensor, beta: Tensor) -> Tensor:
     Tensor
         Derivative tensor
     """
-    f = x * F.sigmoid(beta * x, name="fwd")
-    return beta * f + F.sigmoid(beta * x) * (1 - beta * f)
+    pass
 
 
 def deriv_lipswish(F, x: Tensor, beta: Tensor) -> Tensor:
@@ -193,7 +190,7 @@ def deriv_lipswish(F, x: Tensor, beta: Tensor) -> Tensor:
         Derivative tensor
 
     """
-    return deriv_swish(F, x, beta) / 1.1
+    pass
 
 
 class LipSwish(nn.HybridBlock):
@@ -233,4 +230,4 @@ class LipSwish(nn.HybridBlock):
             output of forward
 
         """
-        return x * F.sigmoid(beta * x, name="fwd") / 1.1
+        pass

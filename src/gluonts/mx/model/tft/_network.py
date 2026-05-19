@@ -31,15 +31,6 @@ from ._layers import (
 
 
 class FeatureEmbedder(BaseFeatureEmbedder):
-    def hybrid_forward(self, F, features: Tensor) -> List[Tensor]:
-        concat_features = super().hybrid_forward(F, features)
-        if self.__num_features > 1:
-            features = F.split(
-                concat_features, num_outputs=self.__num_features, axis=-1
-            )
-        else:
-            features = [concat_features]
-        return features
 
 
 class FeatureProjector(HybridBlock):
@@ -120,26 +111,7 @@ class FeatureProjector(HybridBlock):
             where C is the sum of the embedding dimensions for each numerical
             feature, i.e. C = sum(self.config.embedding_dims).
         """
-
-        if self.__num_features > 1:
-            # we slice the last dimension, giving an array of length
-            # self.__num_features with shape (N,T) or (N)
-            real_feature_slices = F.split_v2(
-                features,
-                tuple(np.cumsum(self.feature_dims)[:-1]),
-                axis=-1,
-            )
-        else:
-            # F.split will iterate over the second-to-last axis if the last
-            # axis is one
-            real_feature_slices = [features]
-
-        return [
-            proj(real_feature_slice)
-            for proj, real_feature_slice in zip(
-                self.__projectors, real_feature_slices
-            )
-        ]
+        pass
 
 
 class TemporalFusionTransformerNetwork(HybridBlock):
@@ -397,122 +369,13 @@ class TemporalFusionTransformerNetwork(HybridBlock):
         )
         return preds
 
-    def _forward(
-        self,
-        F,
-        past_observed_values: Tensor,
-        past_covariates: Tensor,
-        future_covariates: Tensor,
-        static_covariates: Tensor,
-    ):
-        static_var, _ = self.static_selector(static_covariates)
-        c_selection = self.selection(static_var).expand_dims(axis=1)
-        c_enrichment = self.enrichment(static_var).expand_dims(axis=1)
-        c_h = self.state_h(static_var)
-        c_c = self.state_c(static_var)
-
-        ctx_input, _ = self.ctx_selector(past_covariates, c_selection)
-        tgt_input, _ = self.tgt_selector(future_covariates, c_selection)
-
-        encoding = self.temporal_encoder(ctx_input, tgt_input, [c_h, c_c])
-        decoding = self.temporal_decoder(
-            encoding, c_enrichment, past_observed_values
-        )
-        preds = self.output_proj(decoding)
-
-        return preds
 
 
 class TemporalFusionTransformerTrainingNetwork(
     TemporalFusionTransformerNetwork
 ):
-    def hybrid_forward(
-        self,
-        F,
-        past_target: Tensor,
-        past_observed_values: Tensor,
-        future_target: Tensor,
-        future_observed_values: Tensor,
-        past_feat_dynamic_real: Tensor,
-        past_feat_dynamic_cat: Tensor,
-        feat_dynamic_real: Tensor,
-        feat_dynamic_cat: Tensor,
-        feat_static_real: Tensor,
-        feat_static_cat: Tensor,
-    ) -> Tensor:
-        (
-            past_covariates,
-            future_covariates,
-            static_covariates,
-            offset,
-            scale,
-        ) = self._preprocess(
-            F,
-            past_target,
-            past_observed_values,
-            past_feat_dynamic_real,
-            past_feat_dynamic_cat,
-            feat_dynamic_real,
-            feat_dynamic_cat,
-            feat_static_real,
-            feat_static_cat,
-        )
-
-        preds = self._forward(
-            F,
-            past_observed_values,
-            past_covariates,
-            future_covariates,
-            static_covariates,
-        )
-
-        preds = self._postprocess(F, preds, offset, scale)
-
-        loss = self.loss(future_target, preds)
-        loss = weighted_average(F, loss, future_observed_values)
-        return loss.mean()
 
 
 class TemporalFusionTransformerPredictionNetwork(
     TemporalFusionTransformerNetwork
 ):
-    def hybrid_forward(
-        self,
-        F,
-        past_target: Tensor,
-        past_observed_values: Tensor,
-        past_feat_dynamic_real: Tensor,
-        past_feat_dynamic_cat: Tensor,
-        feat_dynamic_real: Tensor,
-        feat_dynamic_cat: Tensor,
-        feat_static_real: Tensor,
-        feat_static_cat: Tensor,
-    ) -> Tuple[Tuple[Tensor, ...], Tensor, Tensor]:
-        (
-            past_covariates,
-            future_covariates,
-            static_covariates,
-            offset,
-            scale,
-        ) = self._preprocess(
-            F,
-            past_target,
-            past_observed_values,
-            past_feat_dynamic_real,
-            past_feat_dynamic_cat,
-            feat_dynamic_real,
-            feat_dynamic_cat,
-            feat_static_real,
-            feat_static_cat,
-        )
-
-        preds = self._forward(
-            F,
-            past_observed_values,
-            past_covariates,
-            future_covariates,
-            static_covariates,
-        )
-
-        preds = self._postprocess(F, preds, offset, scale)
-        return (preds,), None, None

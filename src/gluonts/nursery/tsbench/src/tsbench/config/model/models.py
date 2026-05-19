@@ -379,9 +379,6 @@ class NBeatsModelConfig(ModelConfig, TrainConfig):
     def name(cls) -> str:
         return "nbeats"
 
-    @property
-    def prediction_samples(self) -> int:
-        return 1
 
     def create_predictor(
         self, estimator: Estimator, network: nn.HybridBlock
@@ -435,13 +432,6 @@ class ProphetModelConfig(ModelConfig):
                 f,
             )
 
-    def load_predictor(self, path: Path) -> Predictor:
-        file = path / "metadata.pickle"
-        with file.open("r") as f:
-            meta = json.load(f)
-        return ProphetPredictor(
-            freq=meta["freq"], prediction_length=meta["prediction_length"]
-        )
 
     def create_estimator(
         self,
@@ -496,9 +486,6 @@ class ARIMAModelConfig(ModelConfig):
     def name(cls) -> str:
         return "arima"
 
-    @property
-    def prefers_parallel_predictions(self) -> bool:
-        return True
 
     def max_time_series_length(self, config: DatasetConfig) -> Optional[int]:
         if isinstance(config, WindFarmsDatasetConfig):

@@ -41,29 +41,6 @@ class CanonicalNetworkBase(HybridBlock):
             self.proj_distr_args = self.distr_output.get_args_proj()
             self.scaler = MeanScaler(keepdims=True)
 
-    def assemble_features(
-        self,
-        F,
-        feat_static_cat: Tensor,  # (batch_size, num_features)
-        time_feat: Tensor,  # (batch_size, history_length, num_features)
-    ) -> Tensor:
-        embedded_cat = self.embedder(
-            feat_static_cat
-        )  # (batch_size, num_features * embedding_size)
-
-        # a workaround when you wish to repeat without knowing the number
-        # of repeats
-        helper_ones = F.ones_like(
-            F.slice_axis(time_feat, axis=2, begin=-1, end=None)
-        )
-        # (batch_size, history_length, num_features * embedding_size)
-        repeated_cat = F.batch_dot(
-            helper_ones, F.expand_dims(embedded_cat, axis=1)
-        )
-
-        # putting together all the features
-        input_feat = F.concat(repeated_cat, time_feat, dim=2)
-        return input_feat
 
     def hybrid_forward(self, F, x, *args, **kwargs):
         raise NotImplementedError
@@ -95,21 +72,7 @@ class CanonicalTrainingNetwork(CanonicalNetworkBase):
         Tensor
             A batch of negative log likelihoods.
         """
-        _, target_scale = self.scaler(
-            past_target,
-            F.ones_like(past_target),  # TODO: pass the actual observed here
-        )
-
-        input_feat = self.assemble_features(F, feat_static_cat, past_time_feat)
-        outputs = self.model(input_feat)
-
-        distr = self.distr_output.distribution(
-            self.proj_distr_args(outputs), scale=target_scale
-        )
-
-        loss = distr.loss(past_target)
-
-        return loss
+        pass
 
 
 class CanonicalPredictionNetwork(CanonicalNetworkBase):
@@ -149,32 +112,4 @@ class CanonicalPredictionNetwork(CanonicalNetworkBase):
             a batch of prediction samples
             Shape: (batch_size, prediction_length, num_sample_paths)
         """
-
-        _, target_scale = self.scaler(
-            past_target,
-            F.ones_like(past_target),  # TODO: pass the actual observed here
-        )
-
-        time_feat = (
-            F.concat(past_time_feat, future_time_feat, dim=1)
-            if self.is_sequential
-            else future_time_feat
-        )
-
-        input_feat = self.assemble_features(F, feat_static_cat, time_feat)
-
-        outputs = self.model(input_feat)
-
-        if self.is_sequential:
-            outputs = F.slice_axis(
-                outputs, axis=1, begin=-self.prediction_len, end=None
-            )
-
-        distr = self.distr_output.distribution(
-            self.proj_distr_args(outputs), scale=target_scale
-        )
-        samples = distr.sample(
-            self.num_parallel_samples
-        )  # (num_samples, batch_size, prediction_length, 1)
-
-        return samples.swapaxes(0, 1)
+        pass

@@ -181,9 +181,7 @@ class SplicedBinnedPareto(BinnedUniforms):
 
         'x' is to have shape (*batch_shape)
         """
-        # By default we put the for training parameter of the pdf on false as
-        # one tends to train with the log-prob
-        return torch.exp(self.log_prob(x, for_training=False))
+        pass
 
     def _inverse_cdf(self, quantiles: torch.Tensor):
         """
@@ -348,6 +346,3 @@ class SplicedBinnedParetoOutput(DistributionOutput):
             self.tail_percentile_gen_pareto,
         )
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

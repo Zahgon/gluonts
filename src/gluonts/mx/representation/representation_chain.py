@@ -43,44 +43,6 @@ class RepresentationChain(Representation):
         for representation in self.chain:
             self.register_child(representation)
 
-    def initialize_from_dataset(
-        self, input_dataset: Dataset, ctx: mx.Context = get_mxnet_context()
-    ):
-        for representation in self.chain:
-            representation.initialize_from_dataset(input_dataset, ctx)
 
-    def initialize_from_array(
-        self, input_array: np.ndarray, ctx: mx.Context = get_mxnet_context()
-    ):
-        for representation in self.chain:
-            representation.initialize_from_array(input_array, ctx)
 
-    def hybrid_forward(
-        self,
-        F,
-        data: Tensor,
-        observed_indicator: Tensor,
-        scale: Optional[Tensor],
-        rep_params: List[Tensor],
-        **kwargs,
-    ) -> Tuple[Tensor, Tensor, List[Tensor]]:
-        for representation in self.chain:
-            data, scale, rep_params = representation(
-                data,
-                observed_indicator,
-                scale,
-                rep_params,
-            )
-        return data, scale, rep_params
 
-    def post_transform(
-        self, F, samples: Tensor, scale: Tensor, rep_params: List[Tensor]
-    ) -> Tensor:
-        for representation in self.chain[::-1]:
-            samples = representation.post_transform(
-                F,
-                samples,
-                scale,
-                rep_params,
-            )
-        return samples

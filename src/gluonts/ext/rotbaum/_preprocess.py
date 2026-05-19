@@ -134,63 +134,7 @@ class PreprocessGeneric:
         tuple
             list of feature datapoints, list of target datapoints
         """
-        altered_time_series = time_series.copy()
-        if self.n_ignore_last > 0:
-            altered_time_series["target"] = altered_time_series["target"][
-                : -self.n_ignore_last
-            ]
-        feature_data = []
-        target_data = []
-        max_num_context_windows = (
-            len(altered_time_series["target"])
-            - self.context_window_size
-            - self.forecast_horizon
-            + 1
-        )
-        if max_num_context_windows < 1:
-            return [[]], [[]]
-
-        assert self.num_samples is not None
-
-        if self.num_samples > 0:
-            locations: Sequence[int] = [
-                np.random.randint(max_num_context_windows)
-                for _ in range(self.num_samples)
-            ]
-        else:
-            locations = range(max_num_context_windows)
-        for starting_index in locations:
-            if self.stratify_targets:
-                featurized_data = self.make_features(
-                    altered_time_series, starting_index
-                )
-                for forecast_horizon_index in range(self.forecast_horizon):
-                    feature_data.append(
-                        list(featurized_data) + [forecast_horizon_index]
-                    )
-                    target_data.append(
-                        [
-                            time_series["target"][
-                                starting_index
-                                + self.context_window_size
-                                + forecast_horizon_index
-                            ]
-                        ]
-                    )
-            else:
-                featurized_data = self.make_features(
-                    altered_time_series, starting_index
-                )
-                feature_data.append(featurized_data)
-                target_data.append(
-                    time_series["target"][
-                        starting_index
-                        + self.context_window_size : starting_index
-                        + self.context_window_size
-                        + self.forecast_horizon
-                    ]
-                )
-        return feature_data, target_data
+        pass
 
     def infer_feature_characteristics(self, ts):
         raise NotImplementedError
@@ -381,10 +325,6 @@ class PreprocessOnlyLagFeatures(PreprocessGeneric):
             )
         return featurized_data
 
-    def encode_one_hot(self, feat: int, cardinality: int) -> List[int]:
-        result = [0] * cardinality
-        result[feat] = 1
-        return result
 
     def encode_one_hot_all(self, feat_list: List):
         # asserts that the categorical features are label encoded

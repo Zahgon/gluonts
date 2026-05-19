@@ -61,14 +61,14 @@ class Recommender(ABC, Generic[T]):
         """
         The number of CPUs required for fitting the recommender.
         """
-        return 1
+        pass
 
     @property
     def required_memory(self) -> int:
         """
         The amount of memory in GiB required for fitting the recommender.
         """
-        return 1
+        pass
 
     def fit(
         self, configs: List[Config[T]], _performances: List[Performance]

@@ -67,21 +67,6 @@ class Binned(Distribution):
     def F(self):
         return getF(self.bin_log_probs)
 
-    @property
-    def support_min_max(self) -> Tuple[Tensor, Tensor]:
-        F = self.F
-        return (
-            F.broadcast_minimum(
-                F.zeros(self.batch_shape),
-                F.sign(F.min(self.bin_centers, axis=-1)),
-            )
-            * MAX_SUPPORT_VAL,
-            F.broadcast_maximum(
-                F.zeros(self.batch_shape),
-                F.sign(F.max(self.bin_centers, axis=-1)),
-            )
-            * MAX_SUPPORT_VAL,
-        )
 
     @staticmethod
     def _compute_edges(F, bin_centers: Tensor) -> Tensor:
@@ -121,36 +106,15 @@ class Binned(Distribution):
 
         return F.concat(low, means, high, dim=-1)
 
-    @property
-    def bin_probs(self):
-        if self._bin_probs is None:
-            self._bin_probs = self.bin_log_probs.exp()
-        return self._bin_probs
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.bin_log_probs.shape[:-1]
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     @property
     def mean(self):
         F = self.F
         return F.broadcast_mul(self.bin_probs, self.bin_centers).sum(axis=-1)
 
-    @property
-    def stddev(self):
-        F = self.F
-        ex2 = F.broadcast_mul(self.bin_probs, self.bin_centers.square()).sum(
-            axis=-1
-        )
-        return F.broadcast_minus(ex2, self.mean.square()).sqrt()
 
     def _get_mask(self, x):
         F = self.F
@@ -253,25 +217,9 @@ class Binned(Distribution):
         return a
 
     def sample(self, num_samples=None, dtype=np.float32):
-        def s(bin_probs):
-            F = self.F
-            indices = F.sample_multinomial(bin_probs)
-            if num_samples is None:
-                return self.bin_centers.pick(indices, -1).reshape_like(
-                    F.zeros_like(indices.astype("float32"))
-                )
-            else:
-                return F.repeat(
-                    F.expand_dims(self.bin_centers, axis=0),
-                    repeats=num_samples,
-                    axis=0,
-                ).pick(indices, -1)
 
         return _sample_multiple(s, self.bin_probs, num_samples=num_samples)
 
-    @property
-    def args(self) -> List:
-        return [self.bin_log_probs, self.bin_centers]
 
 
 class BinnedArgs(gluon.HybridBlock):
@@ -298,13 +246,6 @@ class BinnedArgs(gluon.HybridBlock):
             )
             self.proj.add(gluon.nn.HybridLambda("log_softmax"))
 
-    def hybrid_forward(
-        self, F, x: Tensor, bin_centers: Tensor
-    ) -> Tuple[Tensor, Tensor]:
-        ps = self.proj(x)
-        reshaped_probs = ps.reshape(shape=(-2, -1, self.num_bins), reverse=1)
-        bin_centers = F.broadcast_add(bin_centers, ps.zeros_like())
-        return reshaped_probs, bin_centers
 
 
 class BinnedOutput(DistributionOutput):
@@ -354,6 +295,3 @@ class BinnedOutput(DistributionOutput):
 
         return Binned(probs, bin_centers, label_smoothing=self.label_smoothing)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

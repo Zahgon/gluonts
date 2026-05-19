@@ -80,12 +80,7 @@ class Meter(ABC):
         TypeError
             if min_mode is None
         """
-        if self.min_mode is None:
-            raise TypeError("No optimal mode is defined")
-        if self.min_mode is True:
-            return self.value < self.best
-        else:
-            return self.value > self.best
+        pass
 
     def state_dict(self) -> Dict:
         return {"best": self.best}
@@ -116,7 +111,7 @@ class Timer(Meter):
         """
         Elapsed time in seconds since instantiation or last restart call.
         """
-        return time.time() - self.start_time
+        pass
 
     def _initialize(self) -> None:
         self.start_time = time.time()
@@ -161,11 +156,7 @@ class NumericalAverageMeter(Meter):
         float
             the current average
         """
-        if self._count == 0:
-            warnings.warn(f"Nothing have been added. Inf is returned.")
-            return float("inf")
-        else:
-            return self._cum_values / self._count
+        pass
 
 
 class BatchAverageMeter(NumericalAverageMeter):
@@ -246,13 +237,6 @@ class MeanDeviationMeter(Meter):
         self._cum_base += base.sum().item()
         self.cache = deviation.sum().div(base.sum()).item()
 
-    @property
-    def value(self) -> float:
-        if self._cum_base == 0.0:
-            warnings.warn("Cumulative base is 0. " "Inf is returned.")
-            return float("inf")
-        else:
-            return self._cum_deviation / self._cum_base
 
 
 class RootMeanSquareDeviationMeter(MeanDeviationMeter):
@@ -294,10 +278,3 @@ class RootMeanSquareDeviationMeter(MeanDeviationMeter):
             .item()
         )
 
-    @property
-    def value(self) -> float:
-        if self._cum_base == 0.0:
-            warnings.warn("Cumulative base is 0. " "Inf is returned.")
-            return float("inf")
-        else:
-            return self._cum_deviation**0.5 / self._cum_base**0.5

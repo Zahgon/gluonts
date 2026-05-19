@@ -123,17 +123,8 @@ class GluonTSDataModule(pl.LightningDataModule):
             (catch22_val_test or catch22_train) and num_queries > 1
         ), "Catch22 support set selection only works with num_queries equal to one."
 
-    @property
-    def context_length(self) -> int:
-        return self.context_length_multiple * self.prediction_length
 
-    @property
-    def support_length(self) -> int:
-        return self.support_length_multiple * self.prediction_length
 
-    @property
-    def prediction_length(self) -> int:
-        return self._prediction_length or self.meta.prediction_length
 
     @property
     def root(self) -> Path:
@@ -148,11 +139,7 @@ class GluonTSDataModule(pl.LightningDataModule):
         """
         Returns the dataset's metadata.
         """
-        return (
-            MetaData.parse_file(self.root / "metadata.json")
-            if self.root.exists()
-            else None
-        )
+        pass
 
     def sampling_triplet_dataset(
         self, split: Literal["train", "val"]
@@ -226,10 +213,6 @@ class GluonTSDataModule(pl.LightningDataModule):
         self.splits.val().prepare()
         self.splits.test().prepare()
 
-    @cached_property
-    def catch22_nn(self):
-        with open(self.root / "catch22" / "nn_100.pkl", "rb") as f:
-            return pickle.load(f)
 
     def train_dataloader(self) -> DataLoader[TripletBatch]:
         return DataLoader(

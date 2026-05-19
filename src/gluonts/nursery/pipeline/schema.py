@@ -63,16 +63,11 @@ class Schema:
         ty = clone.fields.pop(name)
         return clone, ty
 
-    def validate(self, entry: dict):
-        return {name: ty(entry[name]) for name, ty in self.fields.items()}
 
     @classmethod
     def infer(cls, data):
         return cls({name: infer_type(value) for name, value in data.items()})
 
-    @classmethod
-    def dryrun(cls, pipeline):
-        return pipeline.apply_schema(SchemaTracker())
 
 
 @dataclass

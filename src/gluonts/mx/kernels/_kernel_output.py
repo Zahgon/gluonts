@@ -55,15 +55,7 @@ class KernelOutput:
         Tensor
             The standard deviation of the given data.
         """
-        return F.sqrt(
-            F.mean(
-                F.broadcast_minus(
-                    data, F.mean(data, axis=axis).expand_dims(axis=axis)
-                )
-                ** 2,
-                axis=axis,
-            )
-        )
+        pass
 
 
 class KernelOutputDict(KernelOutput):

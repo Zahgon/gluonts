@@ -40,7 +40,7 @@ class PerformanceTransformer(TransformerMixin):
         Returns the feature names for the columns of the transformed
         performance objects.
         """
-        return self.encoder.feature_names_
+        pass
 
     def fit(self, y: list[Performance]) -> PerformanceTransformer:
         """

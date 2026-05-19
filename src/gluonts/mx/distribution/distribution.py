@@ -157,7 +157,7 @@ class Distribution:
             Tensor of shape `batch_shape` containing the density of the
             distribution for each event in `x`.
         """
-        return self.log_prob(x).exp()
+        pass
 
     @property
     def batch_shape(self) -> Tuple:
@@ -207,14 +207,14 @@ class Distribution:
         r"""
         Number of batch dimensions, i.e., length of the `batch_shape` tuple.
         """
-        return len(self.batch_shape)
+        pass
 
     @property
     def all_dim(self) -> int:
         r"""
         Number of overall dimensions.
         """
-        return self.batch_dim + self.event_dim
+        pass
 
     def sample(
         self, num_samples: Optional[int] = None, dtype=np.float32
@@ -272,7 +272,7 @@ class Distribution:
         r"""
         Tensor containing the variance of the distribution.
         """
-        return self.stddev.square()
+        pass
 
     def cdf(self, x: Tensor) -> Tensor:
         r"""

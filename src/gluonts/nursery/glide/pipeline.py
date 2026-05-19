@@ -17,8 +17,6 @@ from gluonts.nursery.glide import Apply, ParApply
 from gluonts.nursery.glide.util import lift
 
 
-def lifted(fns):
-    return tuple(map(lift, fns))
 
 
 class Pipeline:
@@ -28,20 +26,10 @@ class Pipeline:
     def apply(self, parts, *args, **kwargs):
         return Apply(compose_left(*self.fns), parts, *args, **kwargs)
 
-    def parapply(self, parts, *args, **kwargs):
-        return ParApply(compose_left(*self.fns), parts, *args, **kwargs)
 
-    def and_then(self, *fns):
-        return Pipeline(self.fns + fns)
 
-    def and_then_each(self, *fns):
-        return self.and_then(*lifted(fns))
 
-    def but_first(self, *fns):
-        return Pipeline(fns + self.fns)
 
-    def but_first_each(self, *fns):
-        return self.but_first(*lifted(fns))
 
     def __add__(self, other):
         return Pipeline(self.fns + other.fns)

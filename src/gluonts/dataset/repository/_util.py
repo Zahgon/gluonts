@@ -49,10 +49,6 @@ def request_retrieve_hook(tqdm):
         tsize  : int, optional
             Total size (in tqdm units). If [default: None] remains unchanged.
         """
-        nonlocal last_byte
-        if tsize is not None:
-            tqdm.total = tsize
-        tqdm.update((block - last_byte) * block_size)
-        last_byte = block
+        pass
 
     return update_to

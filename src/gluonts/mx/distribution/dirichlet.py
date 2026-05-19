@@ -54,21 +54,9 @@ class Dirichlet(Distribution):
     def F(self):
         return getF(self.alpha)
 
-    @property
-    def args(self) -> List:
-        return [self.alpha]
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.alpha.shape[:-1]
 
-    @property
-    def event_shape(self) -> Tuple:
-        return self.alpha.shape[-1:]
 
-    @property
-    def event_dim(self) -> int:
-        return 1
 
     def log_prob(self, x: Tensor) -> Tensor:
         F = self.F
@@ -94,37 +82,10 @@ class Dirichlet(Distribution):
         sum_alpha = F.sum(alpha, axis=-1)
         return F.broadcast_div(alpha, sum_alpha.expand_dims(axis=-1))
 
-    @property
-    def variance(self) -> Tensor:
-        F = self.F
-        alpha = self.alpha
-        d = int(F.ones_like(self.alpha).sum(axis=-1).max().asscalar())
-
-        scale = F.sqrt(F.sum(alpha, axis=-1) + 1).expand_dims(axis=-1)
-        scaled_alpha = F.broadcast_div(self.mean, scale)
-
-        cross = F.linalg_gemm2(
-            scaled_alpha.expand_dims(axis=-1),
-            scaled_alpha.expand_dims(axis=-1),
-            transpose_b=True,
-        )
-
-        diagonal = make_nd_diag(F, F.broadcast_div(scaled_alpha, scale), d)
-
-        return diagonal - cross
 
     def sample(
         self, num_samples: Optional[int] = None, dtype=np.float32
     ) -> Tensor:
-        def s(alpha: Tensor) -> Tensor:
-            F = getF(alpha)
-            samples_gamma = F.sample_gamma(
-                alpha=alpha, beta=F.ones_like(alpha), dtype=dtype
-            )
-            sum_gamma = F.sum(samples_gamma, axis=-1, keepdims=True)
-            samples_s = F.broadcast_div(samples_gamma, sum_gamma)
-
-            return samples_s
 
         samples = _sample_multiple(
             s, alpha=self.alpha, num_samples=num_samples
@@ -152,6 +113,3 @@ class DirichletOutput(DistributionOutput):
         alpha = F.Activation(alpha_vector, act_type="softrelu")
         return alpha
 
-    @property
-    def event_shape(self) -> Tuple:
-        return (self.dim,)

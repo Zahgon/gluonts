@@ -67,57 +67,16 @@ class TiDELightningModule(pl.LightningModule):
         """
         Execute training step.
         """
-        train_loss = self.model.loss(
-            **select(self.inputs, batch),
-            future_target=batch["future_target"],
-            future_observed_values=batch["future_observed_values"],
-        ).mean()
-        self.log(
-            "train_loss",
-            train_loss,
-            on_epoch=True,
-            on_step=False,
-            prog_bar=True,
-        )
-        return train_loss
+        pass
 
     def validation_step(self, batch, batch_idx: int):  # type: ignore
         """
         Execute validation step.
         """
-        val_loss = self.model.loss(
-            **select(self.inputs, batch),
-            future_target=batch["future_target"],
-            future_observed_values=batch["future_observed_values"],
-        ).mean()
-
-        self.log(
-            "val_loss", val_loss, on_epoch=True, on_step=False, prog_bar=True
-        )
-        return val_loss
+        pass
 
     def configure_optimizers(self):
         """
         Returns the optimizer to use.
         """
-        optimizer = torch.optim.Adam(
-            self.model.parameters(),
-            lr=self.lr,
-            weight_decay=self.weight_decay,
-        )
-        monitor = (
-            "val_loss" if has_validation_loop(self.trainer) else "train_loss"
-        )
-
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": ReduceLROnPlateau(
-                    optimizer=optimizer,
-                    mode="min",
-                    factor=0.5,
-                    patience=self.patience,
-                ),
-                "monitor": monitor,
-            },
-        }
+        pass

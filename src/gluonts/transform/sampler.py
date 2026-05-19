@@ -35,11 +35,6 @@ class InstanceSampler(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    def _get_bounds(self, ts: np.ndarray) -> Tuple[int, int]:
-        return (
-            self.min_past,
-            ts.shape[self.axis] - self.min_future,
-        )
 
     def __call__(self, ts: np.ndarray) -> np.ndarray:
         raise NotImplementedError()
@@ -207,11 +202,6 @@ class ContinuousTimePointSampler(BaseModel):
     min_past: float = 0.0
     min_future: float = 0.0
 
-    def _get_bounds(self, interval_length: float) -> Tuple[float, float]:
-        return (
-            self.min_past,
-            interval_length - self.min_future,
-        )
 
     def __call__(self, interval_length: float) -> np.ndarray:
         """

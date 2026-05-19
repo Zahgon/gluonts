@@ -108,9 +108,6 @@ class LagTSTModel(nn.Module):
 
         self.args_proj = self.distr_output.get_args_proj(d_model)
 
-    @property
-    def _past_length(self) -> int:
-        return self.context_length + max(self.lags_seq)
 
     def describe_inputs(self, batch_size=1) -> InputSpec:
         return InputSpec(

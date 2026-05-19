@@ -19,32 +19,11 @@ def thinning_sampler(rng, lamb, xmin=0, lamb_min=1e-10):
     Ogata's Thinning algorithm for time-varying exponential distribution with
     monotone-decreasing intensity function.
     """
-    while lamb(xmin) > lamb_min:
-        dx = -np.log(rng.rand()) / lamb(xmin)
-        x = xmin + dx
-        accept_rate = lamb(x) / lamb(xmin)
-
-        if rng.rand() < accept_rate:
-            return x
-        xmin = x
-    raise ValueError(
-        f"require lamb({xmin})>{lamb_min} to guarantee cdf(infty)=1"
-    )
+    pass
 
 
 def Hawkes(rng, background, kernel, xmin, xmax, N_max=1e6):
     """
     requires int x kernel(x)<infty.
     """
-    X = []
-    while len(X) < N_max:
-        lamb = lambda x: background + np.sum(  # noqa
-            [kernel(x - xi) if x >= xi else 0 for xi in X]
-        )
-        x = thinning_sampler(rng, lamb, max(X + [xmin]))
-        if x > xmax:  # out of range
-            return X
-
-        X.append(x)
-
-    raise ValueError(f"N>{N_max}; check if int_0^infty kernel < inf")
+    pass

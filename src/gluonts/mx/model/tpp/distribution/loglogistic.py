@@ -46,17 +46,8 @@ class Loglogistic(TPPDistribution):
         self.mu = mu
         self.sigma = sigma
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.mu.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     @property
     def mean(self) -> Tensor:
@@ -183,6 +174,3 @@ class LoglogisticOutput(TPPDistributionOutput):
         sigma = F.Activation(sigma, "softrelu")
         return mu.squeeze(axis=-1), sigma.squeeze(axis=-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()

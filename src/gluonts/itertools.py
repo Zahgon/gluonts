@@ -124,8 +124,6 @@ def batcher(iterable: Iterable[T], batch_size: int) -> Iterator[List[T]]:
     """
     it: Iterator[T] = iter(iterable)
 
-    def get_batch():
-        return list(itertools.islice(it, batch_size))
 
     # has an empty list so that we have a 2D array for sure
     return iter(get_batch, [])
@@ -190,23 +188,6 @@ class Fuse:
     def __len__(self):
         return self._length
 
-    def _get_range(self, start: _SubIndex, stop: _SubIndex) -> "Fuse":
-        first = self.collections[start.item]
-
-        if start.item == stop.item:
-            return Fuse([first[start.local : stop.local]])
-
-        items = []
-
-        first = first[start.local :]
-        if len(first) > 0:
-            items.append(first)
-
-        for item_index in range(start.item + 1, stop.item):
-            items.append(self.collections[item_index])
-
-        items.append(self.collections[stop.item][: stop.local])
-        return Fuse(items)
 
     def _location_for(self, idx, side="right") -> _SubIndex:
         """
@@ -223,24 +204,7 @@ class Fuse:
         >>> fuse._location_for(3)
         _SubIndex(item=1, local=1)
         """
-        if idx == 0 or not self:
-            return _SubIndex(0, 0)
-
-        # When the index is out of bounds, we fall back to the last element
-        if idx >= len(self):
-            return _SubIndex(
-                len(self.collections) - 1,
-                len(self.collections[-1]),
-            )
-
-        part_no = np.searchsorted(self._offsets, idx, side)
-
-        if part_no == 0:
-            local_idx = idx
-        else:
-            local_idx = idx - self._offsets[part_no - 1]
-
-        return _SubIndex(int(part_no), int(local_idx))
+        pass
 
     def __getitem__(self, idx):
         if isinstance(idx, slice):
@@ -290,15 +254,7 @@ def split_into(xs: Sequence, n: int) -> Sequence:
     >>> split_into("abcd", 3)
     ['ab', 'c', 'd']
     """
-
-    bucket_size, remainder = divmod(len(xs), n)
-
-    # We need one fewer than `n`, since these become split positions.
-    relative_splits = np.full(n - 1, bucket_size)
-    # e.g. 10 by 3 -> 4, 3, 3
-    relative_splits[:remainder] += 1
-
-    return split(xs, np.cumsum(relative_splits).tolist())
+    pass
 
 
 @dataclass
@@ -630,23 +586,7 @@ def trim_nans(xs, trim="fb"):
 
     Like ``np.trim_zeros`` but for `NaNs`.
     """
-
-    trim = trim.lower()
-
-    start = None
-    end = None
-
-    if "f" in trim:
-        for start, val in enumerate(xs):
-            if not math.isnan(val):
-                break
-
-    if "b" in trim:
-        for end in range(len(xs), -1, -1):
-            if not math.isnan(xs[end - 1]):
-                break
-
-    return xs[start:end]
+    pass
 
 
 def inverse(dct: Dict[K, V]) -> Dict[V, K]:
@@ -751,11 +691,4 @@ def chop(
     >>> x[chop(at=3, take=-2)]
     [1, 2]
     """
-
-    if at < 0 and take + at <= 0:
-        return slice(at, None)
-
-    if take < 0:
-        return slice(at + take, at)
-
-    return slice(at, at + take)
+    pass

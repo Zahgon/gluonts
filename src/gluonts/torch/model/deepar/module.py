@@ -199,18 +199,7 @@ class DeepARModel(nn.Module):
             zeros_fn=torch.zeros,
         )
 
-    @property
-    def _number_of_features(self) -> int:
-        return (
-            sum(self.embedding_dimension)
-            + self.num_feat_dynamic_real
-            + self.num_feat_static_real
-            + 1  # the log(scale)
-        )
 
-    @property
-    def _past_length(self) -> int:
-        return self.context_length + max(self.lags_seq)
 
     def prepare_rnn_input(
         self,

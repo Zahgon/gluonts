@@ -46,17 +46,8 @@ class LogitNormal(Distribution):
     def F(self):
         return getF(self.mu)
 
-    @property
-    def batch_shape(self) -> Tuple:
-        return self.mu.shape
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
-    @property
-    def event_dim(self) -> int:
-        return 0
 
     def log_prob(self, x: Tensor) -> Tensor:
         F = self.F
@@ -75,16 +66,6 @@ class LogitNormal(Distribution):
         return log_prob
 
     def sample(self, num_samples=None, dtype=np.float32):
-        def s(mu):
-            F = self.F
-            q_min = 1e-3
-            q_max = 1 - q_min
-            sample = F.sample_uniform(
-                F.ones_like(mu) * F.full(1, q_min),
-                F.ones_like(mu) * F.full(1, q_max),
-            )
-            transf_sample = self.quantile(sample)
-            return transf_sample
 
         mult_samp = _sample_multiple(s, self.mu, num_samples=num_samples)
         return mult_samp
@@ -97,9 +78,6 @@ class LogitNormal(Distribution):
         )
         return exp / (1 + exp)
 
-    @property
-    def args(self) -> List:
-        return [self.mu, self.sigma]
 
 
 class LogitNormalOutput(DistributionOutput):
@@ -111,9 +89,6 @@ class LogitNormalOutput(DistributionOutput):
         sigma = F.maximum(softplus(F, sigma), cls.eps())
         return mu.squeeze(axis=-1), sigma.squeeze(axis=-1)
 
-    @property
-    def event_shape(self) -> Tuple:
-        return ()
 
     def distribution(
         self, distr_args, loc=None, scale=None, **kwargs

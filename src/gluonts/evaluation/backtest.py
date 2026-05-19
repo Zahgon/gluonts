@@ -32,13 +32,7 @@ def _to_dataframe(input_label: Tuple[DataEntry, DataEntry]) -> pd.DataFrame:
     """
     Turn a pair of consecutive (in time) data entries into a dataframe.
     """
-    start = input_label[0][FieldName.START]
-    targets = [entry[FieldName.TARGET] for entry in input_label]
-    full_target = np.concatenate(targets, axis=-1)
-    index = period_index(
-        {FieldName.START: start, FieldName.TARGET: full_target}
-    )
-    return pd.DataFrame(full_target.transpose(), index=index)
+    pass
 
 
 def make_evaluation_predictions(

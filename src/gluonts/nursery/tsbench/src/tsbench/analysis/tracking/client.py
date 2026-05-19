@@ -69,19 +69,7 @@ class SacredMongoClient:
         Returns:
             The sacred experiment describing the experiment.
         """
-        full_query = {
-            **self.base_query,
-            **{f"config.{k}": v for k, v in config.items()},
-            **(others or {}),
-        }
-        assert (
-            self.db.runs.count_documents(full_query) == 1
-        ), "Query does not return a single experiment."
-
-        info = self.db.runs.find_one(full_query)
-        assert info is not None
-
-        return SacredExperiment(info, self.db, self.fs)
+        pass
 
     def query(
         self, config: Dict[str, Any], others: Optional[Dict[str, Any]] = None
@@ -97,13 +85,7 @@ class SacredMongoClient:
         Returns:
             The sacred experiments found via the query.
         """
-        full_query = {
-            **self.base_query,
-            **{f"config.{k}": v for k, v in config.items()},
-            **(others or {}),
-        }
-        infos = self.db.runs.find(full_query)
-        return [SacredExperiment(info, self.db, self.fs) for info in infos]
+        pass
 
     def __iter__(self) -> Iterator[SacredExperiment]:
         for info in self.db.runs.find(self.base_query):

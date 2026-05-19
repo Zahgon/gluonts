@@ -157,21 +157,8 @@ class GaussianDiffusion(nn.Module):
             ),
         )
 
-    @property
-    def scale(self):
-        return self.__scale
 
-    @scale.setter
-    def scale(self, scale):
-        self.__scale = scale
 
-    def q_mean_variance(self, x_start, t):
-        mean = extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
-        variance = extract(1.0 - self.alphas_cumprod, t, x_start.shape)
-        log_variance = extract(
-            self.log_one_minus_alphas_cumprod, t, x_start.shape
-        )
-        return mean, variance, log_variance
 
     def predict_start_from_noise(self, x_t, t, noise):
         return (
@@ -253,23 +240,6 @@ class GaussianDiffusion(nn.Module):
             x_hat *= self.scale
         return x_hat
 
-    @torch.no_grad()
-    def interpolate(self, x1, x2, t=None, lam=0.5):
-        b, *_, device = *x1.shape, x1.device
-        t = default(t, self.num_timesteps - 1)
-
-        assert x1.shape == x2.shape
-
-        t_batched = torch.stack([torch.tensor(t, device=device)] * b)
-        xt1, xt2 = map(lambda x: self.q_sample(x, t=t_batched), (x1, x2))
-
-        img = (1 - lam) * xt1 + lam * xt2
-        for i in reversed(range(0, t)):
-            img = self.p_sample(
-                img, torch.full((b,), i, device=device, dtype=torch.long)
-            )
-
-        return img
 
     def q_sample(self, x_start, t, noise=None):
         noise = default(noise, lambda: torch.randn_like(x_start))

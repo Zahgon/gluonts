@@ -25,13 +25,6 @@ VALID_N_BEATS_STACK_TYPES = "G", "S", "T"
 VALID_LOSS_FUNCTIONS = "sMAPE", "MASE", "MAPE"
 
 
-def linear_space(
-    F, backcast_length: int, forecast_length: int, fwd_looking: bool
-):
-    if fwd_looking:
-        return F.arange(0, forecast_length) / forecast_length
-    else:
-        return F.arange(-backcast_length, 0) / backcast_length  # Option 01
         # return F.arange(backcast_length, 0, -1) / backcast_length # Option 02
         # return F.arange(0, backcast_length) / backcast_length # Option 03
 
@@ -49,17 +42,7 @@ def seasonality_model(
 
     So the total number of learned coefficients amounts to 2*num_coefficients.
     """
-    t = linear_space(
-        F, context_length, prediction_length, fwd_looking=is_forecast
-    )
-    cosines = F.stack(
-        *[F.cos(2 * np.pi * i * t) for i in range(num_coefficients)]
-    )
-    sines = F.stack(
-        *[F.sin(2 * np.pi * i * t) for i in range(num_coefficients)]
-    )
-    S = F.concat(cosines, sines, dim=0)
-    return S
+    pass
 
 
 def trend_model(
@@ -72,11 +55,7 @@ def trend_model(
     """
     Creates a polynomial basis of degree num_coefficients-1.
     """
-    t = linear_space(
-        F, context_length, prediction_length, fwd_looking=is_forecast
-    )
-    T = F.stack(*[t**i for i in range(num_coefficients)])
-    return T
+    pass
 
 
 class NBEATSBlock(mx.gluon.HybridBlock):
@@ -159,22 +138,6 @@ class NBEATSBlock(mx.gluon.HybridBlock):
     def initialize_basis(self, F):
         pass
 
-    def hybrid_forward(self, F, x, *args, **kwargs):
-        # We do this to cache the constant basis matrix between forward passes
-        if not self.basis_initialized:
-            self.initialize_basis(F)
-            self.basis_initialized = True
-
-        x = self.fc_stack(x)
-        theta_f = self.theta_forecast(x)
-        forecast = self.forecast(theta_f)
-
-        if self.has_backcast:
-            theta_b = self.theta_backcast(x)
-            backcast = self.backcast(theta_b)
-            return backcast, forecast
-
-        return forecast
 
 
 class NBEATSGenericBlock(NBEATSBlock):
@@ -282,24 +245,6 @@ class NBEATSSeasonalBlock(NBEATSBlock):
                 prefix="forecast_lambda_",
             )
 
-    def initialize_basis(self, F):
-        # these are essentially constant matrices of type F that
-        # define the basis for the seasonal model
-        if self.has_backcast:
-            self.backcast_basis = seasonality_model(
-                F,
-                num_coefficients=self.num_coefficients,
-                context_length=self.context_length,
-                prediction_length=self.prediction_length,
-                is_forecast=False,
-            )
-        self.forecast_basis = seasonality_model(
-            F,
-            num_coefficients=self.num_coefficients,
-            context_length=self.context_length,
-            prediction_length=self.prediction_length,
-            is_forecast=True,
-        )
 
 
 class NBEATSTrendBlock(NBEATSBlock):
@@ -353,24 +298,6 @@ class NBEATSTrendBlock(NBEATSBlock):
                 prefix="forecast_lambda_",
             )
 
-    def initialize_basis(self, F):
-        # these are essentially constant matrices of type F that
-        # define the basis for the trend model
-        if self.has_backcast:
-            self.backcast_basis = trend_model(
-                F,
-                num_coefficients=self.expansion_coefficient_length,
-                context_length=self.context_length,
-                prediction_length=self.prediction_length,
-                is_forecast=False,
-            )
-        self.forecast_basis = trend_model(
-            F,
-            num_coefficients=self.expansion_coefficient_length,
-            context_length=self.context_length,
-            prediction_length=self.prediction_length,
-            is_forecast=True,
-        )
 
 
 class NBEATSNetwork(mx.gluon.HybridBlock):
@@ -522,30 +449,6 @@ class NBEATSNetwork(mx.gluon.HybridBlock):
                         net_block, f"block_{stack_id}_{block_id}"
                     )
 
-    def hybrid_forward(
-        self,
-        F,
-        past_target: Tensor,
-        past_observed_values: Tensor,
-        future_target: Optional[Tensor],
-        future_observed_values: Optional[Tensor],
-    ):
-        past_target, scale = self.scaler(past_target, past_observed_values)
-
-        if len(self.net_blocks) == 1:  # if first block is also last block
-            forecast = self.net_blocks[0](past_target)
-        else:
-            backcast, forecast = self.net_blocks[0](past_target)
-            backcast = (past_target - backcast) * past_observed_values
-            # connect regular blocks (all except last)
-            for i in range(1, len(self.net_blocks) - 1):
-                b, f = self.net_blocks[i](backcast)
-                backcast = (backcast - b) * past_observed_values
-                forecast = forecast + f
-            # connect last block
-            forecast = forecast + self.net_blocks[-1](backcast)
-
-        return F.broadcast_mul(forecast, scale)
 
     def smape_loss(
         self,
@@ -695,38 +598,7 @@ class NBEATSTrainingNetwork(NBEATSNetwork):
         Tensor
             Loss tensor. Shape: (batch_size, ).
         """
-        forecast = super().hybrid_forward(
-            F,
-            past_target=past_target,
-            past_observed_values=past_observed_values,
-            future_target=None,
-            future_observed_values=None,
-        )
-
-        if self.loss_function == "sMAPE":
-            loss = self.smape_loss(
-                F, forecast, future_target, future_observed_values
-            )
-        elif self.loss_function == "MAPE":
-            loss = self.mape_loss(
-                F, forecast, future_target, future_observed_values
-            )
-        elif self.loss_function == "MASE":
-            loss = self.mase_loss(
-                F,
-                forecast,
-                future_target,
-                past_target,
-                self.periodicity,
-                future_observed_values,
-            )
-        else:
-            raise ValueError(
-                f"Invalid value {self.loss_function} for argument"
-                " loss_function."
-            )
-
-        return loss
+        pass
 
 
 class NBEATSPredictionNetwork(NBEATSNetwork):
@@ -763,16 +635,4 @@ class NBEATSPredictionNetwork(NBEATSNetwork):
         Tensor
             Prediction sample. Shape: (batch_size, 1, prediction_length).
         """
-        forecasts = super().hybrid_forward(
-            F,
-            past_target=past_target,
-            past_observed_values=past_observed_values,
-            future_target=None,
-            future_observed_values=None,
-        )
-
-        # dimension collapsed previously because we only have one sample each:
-        forecasts = F.expand_dims(forecasts, axis=1)
-
-        # (batch_size, 1, prediction_length)
-        return forecasts
+        pass

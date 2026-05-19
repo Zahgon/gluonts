@@ -229,35 +229,7 @@ class AbstractBaseSplitter(ABC):
             TestTemplate(dataset=dataset, splitter=self),
         )
 
-    def generate_training_entries(
-        self, dataset: Dataset
-    ) -> Generator[DataEntry, None, None]:
-        yield from map(self.training_entry, dataset)
 
-    def generate_test_pairs(
-        self,
-        dataset: Dataset,
-        prediction_length: int,
-        windows: int = 1,
-        distance: Optional[int] = None,
-        max_history: Optional[int] = None,
-    ) -> Generator[Tuple[DataEntry, DataEntry], None, None]:
-        if distance is None:
-            distance = prediction_length
-
-        for entry in dataset:
-            for window in range(windows):
-                offset = window * distance
-                test = self.test_pair(
-                    entry, prediction_length=prediction_length, offset=offset
-                )
-
-                if max_history is not None:
-                    yield slice_data_entry(
-                        test[0], slice(-max_history, None)
-                    ), test[1]
-                else:
-                    yield test[0], test[1]
 
 
 @dataclass
@@ -278,33 +250,7 @@ class OffsetSplitter(AbstractBaseSplitter):
 
     offset: int
 
-    def training_entry(self, entry: DataEntry) -> DataEntry:
-        return slice_data_entry(entry, slice(None, self.offset))
 
-    def test_pair(
-        self, entry: DataEntry, prediction_length: int, offset: int = 0
-    ) -> Tuple[DataEntry, DataEntry]:
-        offset_ = self.offset + offset
-        if self.offset < 0:
-            offset_ += entry[FieldName.TARGET].shape[-1]
-        assert (
-            offset_ + prediction_length <= entry[FieldName.TARGET].shape[-1]
-        ), "Not enough data to generate some of the windows; try splitting data at an earlier offset"
-
-        if offset_ + prediction_length:
-            input_slice = slice(None, offset_)
-            label_slice = slice(offset_, offset_ + prediction_length)
-        else:
-            input_slice = slice(None, offset_)
-            label_slice = slice(offset_, None)
-        return (
-            slice_data_entry(
-                entry, input_slice, prediction_length=prediction_length
-            ),
-            slice_data_entry(
-                entry, label_slice, prediction_length=prediction_length
-            ),
-        )
 
 
 @dataclass
@@ -323,27 +269,7 @@ class DateSplitter(AbstractBaseSplitter):
 
     date: pd.Period
 
-    def training_entry(self, entry: DataEntry) -> DataEntry:
-        length = periods_between(entry["start"], self.date)
-        return slice_data_entry(entry, slice(None, length))
 
-    def test_pair(
-        self, entry: DataEntry, prediction_length: int, offset: int = 0
-    ) -> Tuple[DataEntry, DataEntry]:
-        base = periods_between(entry["start"], self.date)
-        input_slice = slice(None, base + offset)
-        label_slice = slice(base + offset, base + offset + prediction_length)
-        assert (
-            label_slice.stop <= entry[FieldName.TARGET].shape[-1]
-        ), "Not enough data to generate some of the windows; try splitting data at an earlier date"
-        return (
-            slice_data_entry(
-                entry, input_slice, prediction_length=prediction_length
-            ),
-            slice_data_entry(
-                entry, label_slice, prediction_length=prediction_length
-            ),
-        )
 
 
 @dataclass
@@ -398,9 +324,6 @@ class TestData:
     def input(self) -> "InputDataset":
         return InputDataset(self)
 
-    @property
-    def label(self) -> "LabelDataset":
-        return LabelDataset(self)
 
 
 @dataclass

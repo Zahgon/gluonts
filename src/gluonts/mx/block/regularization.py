@@ -74,19 +74,7 @@ class ActivationRegularizationLoss(Loss):
             loss tensor with shape (batch_size,). Dimensions other than
             batch_axis are averaged out.
         """
-        if self._alpha != 0 and states:
-            means = []
-            for state in states:
-                if isinstance(state, list):
-                    state = F.stack(*state, axis=self._time_axis)
-                means.append(
-                    self._alpha
-                    * F.power(state, 2).mean(
-                        axis=self._batch_axis, exclude=True
-                    )
-                )
-            return F.add_n(*means)
-        return F.zeros(1)
+        pass
 
 
 class TemporalActivationRegularizationLoss(Loss):
@@ -146,23 +134,4 @@ class TemporalActivationRegularizationLoss(Loss):
             loss tensor with shape (batch_size,). Dimensions other than
             batch_axis are averaged out.
         """
-        if self._beta != 0 and states:
-            means = []
-            for state in states:
-                if isinstance(state, list):
-                    state = F.stack(*state, axis=self._time_axis)
-                sub_state_1 = F.slice_axis(
-                    state, axis=self._time_axis, begin=1, end=None
-                )
-                sub_state_2 = F.slice_axis(
-                    state, axis=self._time_axis, begin=0, end=-1
-                )
-                sub_state_diff = F.elemwise_sub(sub_state_1, sub_state_2)
-                means.append(
-                    self._beta
-                    * F.power(sub_state_diff, 2).mean(
-                        axis=self._batch_axis, exclude=True
-                    )
-                )
-            return F.add_n(*means)
-        return F.zeros(1)
+        pass
